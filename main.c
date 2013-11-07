@@ -72,8 +72,12 @@ int main (void) {
 	ADMUX |= (1 << REFS1);
 	ADMUX &= ~(1 << REFS0);
 
-	/* Set ADC input to channel 0 */
+	/* Set ADC input to differential mode with inputs channel 1 (+) and channel 0 (-) */
 	ADMUX &= ~(0x1f);
+	ADMUX |= (1 << MUX4);
+
+	/* Left align the 10 bit ADC value in the 16 bit register */
+	ADMUX |= (1 << ADLAR);
 
 	/* Enable the ADC */
 	ADCSRA |= (1 << ADEN);
@@ -82,22 +86,23 @@ int main (void) {
 	ADCSRA |= (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
 
 	/* The temperature setpoint (in ADC units) */
-	uint16_t setpoint = 512;
-	uint16_t kp = 1;
+	int16_t setpoint = 0;
+	int16_t kp = 1;
 
 	/* Main loop */
 	while(1) {
 		/* Read from the ADC */
 		ADCSRA |= (1 << ADSC);
 		while (ADCSRA & (1 << ADSC));
-		uint16_t adc_val = ADC;
+		int16_t adc_val = (int16_t) ADC;
+		adc_val /= 64;
 
 		/* Calculate the temperature difference */
 		int16_t temp_diff = (adc_val - setpoint);
 
 		/* Set the new pulse width */
 		if (temp_diff > 0)
-			OCR1B = (kp * (uint16_t)temp_diff) * 30;
+			OCR1B = (kp * (uint16_t)temp_diff) * 60;
 		else
 			OCR1B = 0;
 		_delay_ms(1000);
