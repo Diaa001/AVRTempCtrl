@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <avr/io.h>
 
 #define F_CPU 1000000UL
@@ -80,11 +81,25 @@ int main (void) {
 	/* Set ADC clock prescaler to 1/128 */
 	ADCSRA |= (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
 
+	/* The temperature setpoint (in ADC units) */
+	uint16_t setpoint = 512;
+	uint16_t kp = 1;
+
 	/* Main loop */
 	while(1) {
+		/* Read from the ADC */
 		ADCSRA |= (1 << ADSC);
 		while (ADCSRA & (1 << ADSC));
-		OCR1B = ADC * 15;
+		uint16_t adc_val = ADC;
+
+		/* Calculate the temperature difference */
+		int16_t temp_diff = (adc_val - setpoint);
+
+		/* Set the new pulse width */
+		if (temp_diff > 0)
+			OCR1B = (kp * (uint16_t)temp_diff) * 30;
+		else
+			OCR1B = 0;
 		_delay_ms(1000);
 	}
 
