@@ -48,11 +48,11 @@ F_OSC = 3686400
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = main
+TARGET = avrtempctrl
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c
+SRC = main.c pid.c pid.h
 
 
 # List Assembler source files here.
