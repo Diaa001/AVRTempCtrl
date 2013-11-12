@@ -26,7 +26,7 @@ int main (void) {
 		ADC_wait_for_conversion();
 		int16_t adc_val = (int16_t) ADC_get_result();
 		adc_val /= 64;
-		USART_send_bytes(&adc_val, 2);
+		USART_send_bytes((uint8_t *) &adc_val, 2);
 
 		/* Calculate the temperature difference */
 		int16_t temp_diff = (adc_val - setpoint);
