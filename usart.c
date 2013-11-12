@@ -22,8 +22,8 @@ void USART_init(void)
 	UCSR0C |= (1 << UCSZ01);
 	UCSR0C |= (1 << UCSZ00);
 
-	/* Set the baud rate to ~4800 */
-	UBRR0 = 12;
+	/* Set the baud rate to 250000 */
+	UBRR0 = 0;
 
 	/* Enable the receiver */
 	UCSR0B |= (1 << RXEN0);

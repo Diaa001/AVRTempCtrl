@@ -1,15 +1,19 @@
 #include <stdint.h>
 #include <avr/io.h>
 
-#define F_CPU 1000000UL
+#define F_CPU 4000000UL
 
 #include <util/delay.h>
 
 #include "usart.h"
 #include "timer.h"
 #include "adc.h"
+#include "clock.h"
 
 int main (void) {
+	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
+	clock_set_prescale_2();
+
 	USART_init();
 	timer_8bit_cnt0_init();
 	timer_16bit_cnt1_init();

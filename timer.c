@@ -24,7 +24,7 @@ void timer_8bit_cnt0_init(void)
 	TCCR0B &= ~(1 << CS01);
 
 	/* Set the counter frequency (f = F_CPU / 1024 / OCR0A) */
-	OCR0A = 191;
+	OCR0A = 255;
 
 	/* Set the duty cycle (0: 0%, OCR0A: 100%) */
 	OCR0B = 64;
@@ -51,8 +51,8 @@ void timer_16bit_cnt1_init(void)
 	TCCR1A |= (1 << COM1B1);
 
 	/* Set the clock prescaler 1/64 */
-	TCCR1B |= (1 << CS11) | (1 << CS10);
-	TCCR1B &= ~(1 << CS12);
+	TCCR1B &= ~((1 << CS11) | (1 << CS10));
+	TCCR1B |= (1 << CS12);
 
 	/* Set the counter frequency (f = F_CPU / 64 / OCR1A) */
 	OCR1A = 15625;
