@@ -71,13 +71,15 @@ int main (void) {
 
 	/* ### Set up the ADC */
 
-	/* Set internal 1.1 V reference */
-	ADMUX |= (1 << REFS1);
-	ADMUX &= ~(1 << REFS0);
+	/* Use AVCC (5 V) as voltage reference */
+	ADMUX |= (1 << REFS0);
+	ADMUX &= ~(1 << REFS1);
 
-	/* Set ADC input to differential mode with inputs channel 1 (+) and channel 0 (-) */
+	/* Set ADC input to differential mode with inputs channel 0 (+)
+	   and channel 1 (-) and gain 10*/
 	ADMUX &= ~(0x1f);
-	ADMUX |= (1 << MUX4);
+	ADMUX |= (1 << MUX3);
+	ADMUX |= (1 << MUX0);
 
 	/* Left align the 10 bit ADC value in the 16 bit register */
 	ADMUX |= (1 << ADLAR);
