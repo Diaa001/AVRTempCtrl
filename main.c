@@ -5,7 +5,10 @@
 
 #include <util/delay.h>
 
+#include "usart.h"
+
 int main (void) {
+	USART_init();
 	/* ### Set up the 8 bit timer 0 ### */
 
 	/* Initialize the timer value to 0 */
@@ -96,6 +99,7 @@ int main (void) {
 		while (ADCSRA & (1 << ADSC));
 		int16_t adc_val = (int16_t) ADC;
 		adc_val /= 64;
+		USART_send_bytes(&adc_val, 2);
 
 		/* Calculate the temperature difference */
 		int16_t temp_diff = (adc_val - setpoint);
