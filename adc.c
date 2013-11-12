@@ -10,9 +10,7 @@ void ADC_init(void)
 
 	/* Set ADC input to differential mode with inputs channel 0 (+)
 	   and channel 1 (-) and gain 10*/
-	ADMUX &= ~(0x1f);
-	ADMUX |= (1 << MUX3);
-	ADMUX |= (1 << MUX0);
+	ADC_select_channel_diff_1_0_10x();
 
 	/* Left align the 10 bit ADC value in the 16 bit register */
 	ADMUX |= (1 << ADLAR);

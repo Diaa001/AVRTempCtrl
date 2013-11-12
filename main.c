@@ -22,9 +22,9 @@ int main (void) {
 	/* Main loop */
 	while(1) {
 		/* Read from the ADC */
-		ADCSRA |= (1 << ADSC);
-		while (ADCSRA & (1 << ADSC));
-		int16_t adc_val = (int16_t) ADC;
+		ADC_start_conversion();
+		ADC_wait_for_conversion();
+		int16_t adc_val = (int16_t) ADC_get_result();
 		adc_val /= 64;
 		USART_send_bytes(&adc_val, 2);
 
