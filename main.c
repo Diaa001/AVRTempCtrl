@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "adc.h"
 #include "clock.h"
+#include "humidity.h"
 
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
@@ -25,6 +26,9 @@ int main (void) {
 
 	/* Main loop */
 	while(1) {
+		/* Measure the temperature */
+		ADC_select_channel_diff_1_0_10x();
+		_delay_ms(10);
 		/* Read from the ADC */
 		ADC_start_conversion();
 		ADC_wait_for_conversion();
@@ -40,7 +44,22 @@ int main (void) {
 			OCR1B = (kp * (uint16_t)temp_diff) * 60;
 		else
 			OCR1B = 0;
-		_delay_ms(1000);
+
+		_delay_ms(490);
+
+		/* Measure the humidity */
+		ADC_select_channel_2();
+		_delay_ms(10);
+		/* Read from the ADC */
+		ADC_start_conversion();
+		ADC_wait_for_conversion();
+		uint16_t adc_val2 = ADC_get_result();
+		adc_val2 >>= 6;
+		USART_send_bytes((uint8_t *) &adc_val2, 2);
+		adc_val2 = (uint16_t) honeywell_convert_ADC_to_RH(adc_val2);
+		USART_send_bytes((uint8_t *) &adc_val2, 2);
+
+		_delay_ms(490);
 	}
 
 	/* The program will never reach this point. */
