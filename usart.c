@@ -1,6 +1,13 @@
 #include <avr/io.h>
 #include "usart.h"
 
+/* FIXME: Allocate dynamically to save flash memory */
+volatile char rx_buffer [2][RX_BUFFER_LENGTH];
+volatile uint8_t rx_buffer_sel;
+volatile uint8_t rx_buffer_pointer;
+volatile uint8_t rx_complete;
+volatile char tx_buffer [TX_BUFFER_LENGTH];
+
 void USART_init(void)
 {
 	/* Disable the power reduction for the USART */
@@ -22,8 +29,8 @@ void USART_init(void)
 	UCSR0C |= (1 << UCSZ01);
 	UCSR0C |= (1 << UCSZ00);
 
-	/* Set the baud rate to 250000 */
-	UBRR0 = 0;
+	/* Set the baud rate to 19200 */
+	UBRR0 = 12;
 
 	/* Enable the receiver */
 	UCSR0B |= (1 << RXEN0);
