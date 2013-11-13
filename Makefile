@@ -52,7 +52,7 @@ TARGET = avrtempctrl
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c pid.c usart.c timer.c adc.c humidity.c interrupt.c
+SRC = main.c pid.c usart.c timer.c adc.c humidity.c interrupt.c temperature.c
 
 
 # List Assembler source files here.
