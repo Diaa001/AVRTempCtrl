@@ -32,7 +32,7 @@ int main (void) {
 	/* Main loop */
 	while(1) {
 		if (rx_complete) {
-			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "Temperature\n") == 0) {
+			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE\n") == 0) {
 				/* Measure the temperature */
 				ADC_select_channel_diff_1_0_10x();
 				_delay_ms(10);
@@ -53,7 +53,7 @@ int main (void) {
 				else
 					OCR1B = 0;
 
-			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "Humidity\n") == 0) {
+			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY\n") == 0) {
 				/* Measure the humidity */
 				ADC_select_channel_2();
 				_delay_ms(10);
