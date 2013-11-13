@@ -1,6 +1,7 @@
 #include <string.h>
 #include "interrupt.h"
 #include "usart.h"
+#include "adc.h"
 
 uint8_t _sreg_save;
 
@@ -30,4 +31,19 @@ ISR(USART0_RX_vect) {
 		/* Reset the buffer pointer */
 		rx_buffer_pointer = 0;
 	}
+}
+
+ISR(TIMER0_COMPB_vect)
+{
+	/* Increment the index of the ADC queue and set the start flag */
+	_ADC_queue_index = ((_ADC_queue_index & 0x3f) + 1) | ADC_FLAG_QUEUE_START;
+}
+
+ISR(ADC_vect)
+{
+	/* Store the ADC result */
+	_ADC_results[_ADC_queue_index & 0x3f] = ADC;
+
+	/* Set the conversion finished flag */
+	_ADC_queue_index = (_ADC_queue_index & 0x3f) | ADC_FLAG_QUEUE_FINISHED;
 }

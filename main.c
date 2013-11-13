@@ -23,44 +23,44 @@ int main (void) {
 	timer_16bit_cnt1_init();
 	ADC_init();
 
-	/* The temperature setpoint (in ADC units) */
-	int16_t setpoint = 0;
-	int16_t kp = 1;
-
 	interrupts_on();
 
 	/* Main loop */
 	while(1) {
-		if (rx_complete) {
-			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE\n") == 0) {
-				/* Measure the temperature */
+		/* Process tasks */
+		if (_ADC_queue_index & ADC_FLAG_QUEUE_START) {
+			/* The index overflows in the timer interrupt handler */
+			if ((_ADC_queue_index & 0x3f) >= ADC_NUM_INPUTS)
+				_ADC_queue_index = 0;
+
+			/* Start a conversion */
+			ADC_start_conversion();
+
+			/* Disable the ADC_FLAG_QUEUE_START flag */
+			_ADC_queue_index &= 0x3f;
+		} else if (_ADC_queue_index & ADC_FLAG_QUEUE_FINISHED) {
+			/* Select the channel for the next conversion. After changing the channel there is time
+			   for the ADC inputs to settle. */
+			if ((_ADC_queue_index & 0x3f) == ADC_HUM_0) {
 				ADC_select_channel_diff_1_0_10x();
-				_delay_ms(10);
-				/* Read from the ADC */
-				ADC_start_conversion();
-				ADC_wait_for_conversion();
-				int16_t adc_val = (int16_t) ADC_get_result();
+			} else if ((_ADC_queue_index & 0x3f) == ADC_TEMP_0) {
+				ADC_select_channel_2();
+			}
+
+			/* Disable the ADC_FLAG_QUEUE_FINISHED flag */
+			_ADC_queue_index &= 0x3f;
+		} else if (rx_complete) {
+			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE\n") == 0) {
+				interrupts_suspend();
+				int16_t adc_val = (int16_t) _ADC_results[ADC_TEMP_0];
+				interrupts_resume();
 				adc_val /= 64;
 				sprintf((char *) tx_buffer, "Temperature: %i ADC\n", adc_val);
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
-
-				/* Calculate the temperature difference */
-				int16_t temp_diff = (adc_val - setpoint);
-
-				/* Set the new pulse width */
-				if (temp_diff > 0)
-					OCR1B = (kp * (uint16_t)temp_diff) * 60;
-				else
-					OCR1B = 0;
-
 			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY\n") == 0) {
-				/* Measure the humidity */
-				ADC_select_channel_2();
-				_delay_ms(10);
-				/* Read from the ADC */
-				ADC_start_conversion();
-				ADC_wait_for_conversion();
-				uint16_t adc_val2 = ADC_get_result();
+				interrupts_suspend();
+				uint16_t adc_val2 = _ADC_results[ADC_HUM_0];
+				interrupts_resume();
 				adc_val2 >>= 6;
 				sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
@@ -69,7 +69,7 @@ int main (void) {
 			}
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
-		} /* rx_complete */
+		}
 	} /* Main loop */
 
 	/* The program will never reach this point. */

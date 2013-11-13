@@ -2,6 +2,9 @@
 
 #include "adc.h"
 
+volatile uint8_t _ADC_queue_index = ADC_NUM_INPUTS - 1;
+volatile uint16_t _ADC_results [ADC_NUM_INPUTS];
+
 void ADC_init(void)
 {
 	/* Use AVCC (5 V) as voltage reference */
@@ -9,7 +12,8 @@ void ADC_init(void)
 	ADMUX &= ~(1 << REFS1);
 
 	/* Set ADC input to differential mode with inputs channel 0 (+)
-	   and channel 1 (-) and gain 10*/
+	   and channel 1 (-) and gain 10. This has to be set such that the
+	   ADC queue works. */
 	ADC_select_channel_diff_1_0_10x();
 
 	/* Left align the 10 bit ADC value in the 16 bit register */
@@ -20,4 +24,7 @@ void ADC_init(void)
 
 	/* Set ADC clock prescaler to 1/128 */
 	ADCSRA |= (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2);
+
+	/* Enable the conversion complete interrupt */
+	ADCSRA |= (1 << ADIE);
 }

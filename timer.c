@@ -31,6 +31,9 @@ void timer_8bit_cnt0_init(void)
 
 	/* Set the OC0B pin as output */
 	DDRB |= (1 << PB4);
+
+	/* Enable the Compare Match B Interrupt */
+	TIMSK0 |= (1 << OCIE0B);
 }
 
 void timer_16bit_cnt1_init(void)
