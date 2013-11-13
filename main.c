@@ -10,6 +10,7 @@
 #include "adc.h"
 #include "clock.h"
 #include "humidity.h"
+#include "interrupt.h"
 
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
@@ -23,6 +24,8 @@ int main (void) {
 	/* The temperature setpoint (in ADC units) */
 	int16_t setpoint = 0;
 	int16_t kp = 1;
+
+	interrupts_on();
 
 	/* Main loop */
 	while(1) {

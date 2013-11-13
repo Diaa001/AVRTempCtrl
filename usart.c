@@ -30,6 +30,9 @@ void USART_init(void)
 
 	/* Enable the transmitter */
 	UCSR0B |= (1 << TXEN0);
+
+	/* Enable the interrupt when data arrives */
+	UCSR0B |= (1 << RXCIE0);
 }
 
 void USART_send_bytes(const uint8_t * data, uint8_t length)
