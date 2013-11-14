@@ -64,7 +64,8 @@ int main (void) {
 				int16_t adc_val = (int16_t) temperature_ADC[0];
 				interrupts_resume();
 				adc_val /= 64;
-				sprintf((char *) tx_buffer, "Temperature: %i ADC\n", adc_val);
+				int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
+				sprintf((char *) tx_buffer, "Temperature: %i/100 C\n", temperature);
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY") == 0) {
 				interrupts_suspend();
