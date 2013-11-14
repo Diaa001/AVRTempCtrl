@@ -2,6 +2,8 @@
 
 #include "timer.h"
 
+volatile uint8_t _task = NUMBER_OF_TASKS - 1;
+
 void timer_8bit_cnt0_init(void)
 {
 	/* Initialize the timer value to 0 */

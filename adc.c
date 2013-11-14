@@ -2,8 +2,7 @@
 
 #include "adc.h"
 
-volatile uint8_t _ADC_queue_index = ADC_NUM_INPUTS - 1;
-volatile uint16_t _ADC_results [ADC_NUM_INPUTS];
+volatile uint16_t _ADC_result;
 
 void ADC_init(void)
 {

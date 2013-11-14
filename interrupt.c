@@ -1,6 +1,7 @@
 #include <string.h>
 #include "interrupt.h"
 #include "usart.h"
+#include "timer.h"
 #include "adc.h"
 
 uint8_t _sreg_save;
@@ -38,14 +39,17 @@ ISR(USART0_RX_vect) {
 ISR(TIMER0_COMPB_vect)
 {
 	/* Increment the index of the ADC queue and set the start flag */
-	_ADC_queue_index = ((_ADC_queue_index & 0x3f) + 1) | ADC_FLAG_QUEUE_START;
+	_task = ((_task & 0x3f) < NUMBER_OF_TASKS - 1) ? (_task & 0x3f) + 1 : 0;
+
+	/* Activate the start flag. The routinge processing the task is responsible to turn off the flag. */
+	_task |= TASK_START;
 }
 
 ISR(ADC_vect)
 {
 	/* Store the ADC result */
-	_ADC_results[_ADC_queue_index & 0x3f] = ADC;
+	_ADC_result = ADC;
 
-	/* Set the conversion finished flag */
-	_ADC_queue_index = (_ADC_queue_index & 0x3f) | ADC_FLAG_QUEUE_FINISHED;
+	/* Set the conversion complete flag */
+	_ADC_result |= (1 << ADC_CONVERSION_COMPLETE_BIT);
 }

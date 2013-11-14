@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include "temperature.h"
 
+int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
+
 /* ADC values of Pt1000 measurements for temperatures -80, -72, -64, -56, -48,
    -40, -32, -24, -16, -8, +0, +8, +16, +24, +32, +40, +48, +56, +64, +72, +80 */
 int16_t temperature_to_ADC_Pt1000_lookup [] = {
