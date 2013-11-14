@@ -14,11 +14,13 @@ ISR(USART0_RX_vect) {
 		rx_buffer_pointer = 0;
 	}
 
-	/* Read the next character into the buffer */
-	rx_buffer[1 - rx_buffer_sel][rx_buffer_pointer] = UDR0;
+	char byte = UDR0;
 
 	/* Check whether the current character marks the end of the message */
-	if (rx_buffer[1 - rx_buffer_sel][rx_buffer_pointer] != '\n') {
+	if (byte != '\n') {
+		/* Read the next character into the buffer */
+		rx_buffer[1 - rx_buffer_sel][rx_buffer_pointer] = byte;
+
 		/* Increment the buffer pointer */
 		rx_buffer_pointer++;
 	} else {

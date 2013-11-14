@@ -50,14 +50,14 @@ int main (void) {
 			/* Disable the ADC_FLAG_QUEUE_FINISHED flag */
 			_ADC_queue_index &= 0x3f;
 		} else if (rx_complete) {
-			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE\n") == 0) {
+			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE") == 0) {
 				interrupts_suspend();
 				int16_t adc_val = (int16_t) _ADC_results[ADC_TEMP_0];
 				interrupts_resume();
 				adc_val /= 64;
 				sprintf((char *) tx_buffer, "Temperature: %i ADC\n", adc_val);
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
-			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY\n") == 0) {
+			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY") == 0) {
 				interrupts_suspend();
 				uint16_t adc_val2 = _ADC_results[ADC_HUM_0];
 				interrupts_resume();
@@ -65,7 +65,14 @@ int main (void) {
 				sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 			} else {
-				USART_send_bytes((uint8_t *) "Error\n", 6);
+				/* Shorten the command such that the error message does not overflow */
+				rx_buffer[rx_buffer_sel][RX_BUFFER_LENGTH - strlen("Invalid command: \n") - 1] = '\0';
+
+				/* Create the error message */
+				sprintf((char *) tx_buffer, "Invalid command: %s\n", (const char *) rx_buffer[rx_buffer_sel]);
+
+				/* Transmit the error message */
+				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 			}
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
