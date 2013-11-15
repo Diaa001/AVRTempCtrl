@@ -40,8 +40,8 @@ void timer_8bit_cnt0_init(void)
 
 void timer_16bit_cnt1_init(void)
 {
-	/* Initialize the timer value to 0 */
-	TCNT1 = 0;
+	/* Initialize the timer value such that it starts at zero always after the PID task */
+	TCNT1 = -(TASK_PID * 1024 + 512);
 
 	/* Set waveform generation mode to fast PWM with OCRx update at BOTTOM */
 	TCCR1A |= (1 << WGM11) | (1 << WGM10);
