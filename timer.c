@@ -55,12 +55,13 @@ void timer_16bit_cnt1_init(void)
 	TCCR1A &= ~(1 << COM1B0);
 	TCCR1A |= (1 << COM1B1);
 
-	/* Set the clock prescaler 1/64 */
+	/* Set the clock prescaler 1/256 */
 	TCCR1B &= ~((1 << CS11) | (1 << CS10));
 	TCCR1B |= (1 << CS12);
 
 	/* Set the counter frequency (f = F_CPU / 64 / OCR1A) */
-	OCR1A = 15625;
+	/* 1024: Timer0 clock division factor */
+	OCR1A = 1024 * NUMBER_OF_TASKS;
 
 	/* Set the duty cycle (0: 0%, OCR1A: 100%) */
 	OCR1B = 156;
