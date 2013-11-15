@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -15,6 +16,10 @@
 #include "humidity.h"
 #include "interrupt.h"
 #include "pid.h"
+
+#define SUBSTR(A, B)		((A) + strlen(B))
+#define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
+#define EQ_SUBCMD(A, C, B)	(strncmp(SUBSTR((A), (C)), (B), strlen(B)) == 0)
 
 #define PID_CTRL_COOLING	0
 #define PID_CTRL_HEATING	1
@@ -102,27 +107,60 @@ int main (void) {
 				ADC_select_channel_diff_1_0_10x();
 			}
 		} else if (rx_complete) {
-			if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:TEMPERATURE") == 0) {
-				interrupts_suspend();
-				int16_t adc_val = (int16_t) temperature_ADC[0];
-				interrupts_resume();
-				adc_val /= 64;
-				int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
-				sprintf((char *) tx_buffer, "Temperature: %i/100 C\n", temperature);
-				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
-			} else if (strcmp((const char *) rx_buffer[rx_buffer_sel], "GET:HUMIDITY") == 0) {
-				interrupts_suspend();
-				uint16_t adc_val2 = humidity_ADC[0];
-				interrupts_resume();
-				adc_val2 >>= 6;
-				sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
-				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+			char * cmd = (char *) rx_buffer[rx_buffer_sel];
+			if (EQ_CMD(cmd, ":SET")) {
+				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
+					int16_t setpoint = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
+					PID_controller_setpoint = setpoint;
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP0 "));
+					PID_controller_settings[0].P_Factor = factor;
+					PID_controller_settings[0].maxError = MAX_INT / (factor + 1);
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KP1")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP1 "));
+					PID_controller_settings[1].P_Factor = factor;
+					PID_controller_settings[1].maxError = MAX_INT / (factor + 1);
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else {
+					goto CMD_ERROR;
+				}
+			} else if (EQ_CMD(cmd, ":GET")) {
+				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_setpoint);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].P_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
+					interrupts_suspend();
+					int16_t adc_val = (int16_t) temperature_ADC[0];
+					interrupts_resume();
+					adc_val /= 64;
+					int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
+					sprintf((char *) tx_buffer, "Temperature: %i/100 C\n", temperature);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
+					interrupts_suspend();
+					uint16_t adc_val2 = humidity_ADC[0];
+					interrupts_resume();
+					adc_val2 >>= 6;
+					sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else {
+					goto CMD_ERROR;
+				}
 			} else {
-				/* Shorten the command such that the error message does not overflow */
-				rx_buffer[rx_buffer_sel][RX_BUFFER_LENGTH - strlen("Invalid command: \n") - 1] = '\0';
+				CMD_ERROR:
+				/* Shorten the cmd such that the error message does not overflow */
+				cmd[RX_BUFFER_LENGTH - strlen("Invalid command: \n") - 1] = '\0';
 
 				/* Create the error message */
-				sprintf((char *) tx_buffer, "Invalid command: %s\n", (const char *) rx_buffer[rx_buffer_sel]);
+				sprintf((char *) tx_buffer, "Invalid command: %s\n", cmd);
 
 				/* Transmit the error message */
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
