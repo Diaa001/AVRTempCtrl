@@ -187,6 +187,9 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL1")) {
 					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[1].sumError);
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":PWM")) {
+					sprintf((char * ) tx_buffer, "%i/%i\n", OCR1B, OCR1A);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[0];
