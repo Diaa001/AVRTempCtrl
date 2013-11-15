@@ -111,6 +111,7 @@ int main (void) {
 			if (EQ_CMD(cmd, ":SET")) {
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
 					int16_t setpoint = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
+					setpoint = temperature_to_ADC_Pt1000((int8_t)setpoint);
 					PID_controller_setpoint = setpoint;
 					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
@@ -146,7 +147,8 @@ int main (void) {
 				}
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
-					sprintf((char * ) tx_buffer, "%i\n", PID_controller_setpoint);
+					int16_t temperature = temperature_ADC_Pt1000_to_temp(PID_controller_setpoint);
+					sprintf((char * ) tx_buffer, "%i/100\n", temperature);
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
