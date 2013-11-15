@@ -123,6 +123,24 @@ int main (void) {
 					PID_controller_settings[1].P_Factor = factor;
 					PID_controller_settings[1].maxError = MAX_INT / (factor + 1);
 					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KI0")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KI0 "));
+					PID_controller_settings[0].I_Factor = factor;
+					PID_controller_settings[0].maxSumError = MAX_I_TERM / (factor + 1);
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KI1")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KI1 "));
+					PID_controller_settings[1].I_Factor = factor;
+					PID_controller_settings[1].maxSumError = MAX_I_TERM / (factor + 1);
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KD0")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD0 "));
+					PID_controller_settings[0].D_Factor = factor;
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":KD1")) {
+					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD1 "));
+					PID_controller_settings[1].D_Factor = factor;
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else {
 					goto CMD_ERROR;
 				}
@@ -135,6 +153,18 @@ int main (void) {
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].P_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KI0")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].I_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KI1")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].I_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KD0")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].D_Factor);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":KD1")) {
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].D_Factor);
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
 					interrupts_suspend();
