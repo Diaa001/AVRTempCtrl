@@ -142,6 +142,19 @@ int main (void) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD1 "));
 					PID_controller_settings[1].D_Factor = factor;
 					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE")) {
+					if (EQ_SUBCMD(cmd, ":SET:STATE ", "OFF")) {
+						PID_controller_state = PID_CTRL_OFF;
+						USART_send_bytes((const uint8_t *) "OK\n", 3);
+					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "COOL")) {
+						PID_controller_state = PID_CTRL_COOLING;
+						USART_send_bytes((const uint8_t *) "OK\n", 3);
+					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "HEAT")) {
+						PID_controller_state = PID_CTRL_HEATING;
+						USART_send_bytes((const uint8_t *) "OK\n", 3);
+					} else {
+						goto CMD_ERROR;
+					}
 				} else {
 					goto CMD_ERROR;
 				}
@@ -183,6 +196,13 @@ int main (void) {
 					adc_val2 >>= 6;
 					sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":STATE")) {
+					if (PID_controller_state == PID_CTRL_OFF)
+						USART_send_bytes((const uint8_t *) "OFF\n", 4);
+					else if (PID_controller_state == PID_CTRL_COOLING)
+						USART_send_bytes((const uint8_t *) "COOL\n", 5);
+					else if (PID_controller_state == PID_CTRL_HEATING)
+						USART_send_bytes((const uint8_t *) "HEAT\n", 5);
 				} else {
 					goto CMD_ERROR;
 				}
