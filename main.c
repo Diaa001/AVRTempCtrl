@@ -181,6 +181,12 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KD1")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].D_Factor);
 					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL0")) {
+					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[0].sumError);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL1")) {
+					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[1].sumError);
+					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[0];
@@ -205,6 +211,14 @@ int main (void) {
 						USART_send_bytes((const uint8_t *) "HEAT\n", 5);
 				} else {
 					goto CMD_ERROR;
+				}
+			} else if (EQ_CMD(cmd, ":RESET")) {
+				if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL0")) {
+					PID_controller_settings[0].sumError = 0;
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL1")) {
+					PID_controller_settings[1].sumError = 0;
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				}
 			} else {
 				CMD_ERROR:
