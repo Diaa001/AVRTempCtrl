@@ -113,83 +113,64 @@ int main (void) {
 					int16_t setpoint = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
 					setpoint = temperature_to_ADC_Pt1000((int8_t)setpoint);
 					PID_controller_setpoint = setpoint;
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP0 "));
 					PID_controller_settings[0].P_Factor = factor;
 					PID_controller_settings[0].maxError = MAX_INT / (factor + 1);
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP1")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP1 "));
 					PID_controller_settings[1].P_Factor = factor;
 					PID_controller_settings[1].maxError = MAX_INT / (factor + 1);
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KI0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KI0 "));
 					PID_controller_settings[0].I_Factor = factor;
 					PID_controller_settings[0].maxSumError = MAX_I_TERM / (factor + 1);
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KI1")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KI1 "));
 					PID_controller_settings[1].I_Factor = factor;
 					PID_controller_settings[1].maxSumError = MAX_I_TERM / (factor + 1);
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KD0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD0 "));
 					PID_controller_settings[0].D_Factor = factor;
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KD1")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD1 "));
 					PID_controller_settings[1].D_Factor = factor;
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE")) {
 					if (EQ_SUBCMD(cmd, ":SET:STATE ", "OFF")) {
 						PID_controller_state = PID_CTRL_OFF;
-						USART_send_bytes((const uint8_t *) "OK\n", 3);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "COOL")) {
 						PID_controller_state = PID_CTRL_COOLING;
-						USART_send_bytes((const uint8_t *) "OK\n", 3);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "HEAT")) {
 						PID_controller_state = PID_CTRL_HEATING;
-						USART_send_bytes((const uint8_t *) "OK\n", 3);
 					} else {
 						goto CMD_ERROR;
 					}
 				} else {
 					goto CMD_ERROR;
 				}
+				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
 					int16_t temperature = temperature_ADC_Pt1000_to_temp(PID_controller_setpoint);
 					sprintf((char * ) tx_buffer, "%i/100\n", temperature);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].P_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KI0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].I_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KI1")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].I_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KD0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].D_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KD1")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[1].D_Factor);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL0")) {
 					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[0].sumError);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL1")) {
 					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[1].sumError);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":PWM")) {
 					sprintf((char * ) tx_buffer, "%i/%i\n", OCR1B, OCR1A);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[0];
@@ -197,32 +178,32 @@ int main (void) {
 					adc_val /= 64;
 					int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
 					sprintf((char *) tx_buffer, "Temperature: %i/100 C\n", temperature);
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
 					interrupts_suspend();
 					uint16_t adc_val2 = humidity_ADC[0];
 					interrupts_resume();
 					adc_val2 >>= 6;
 					sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
-					USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":STATE")) {
 					if (PID_controller_state == PID_CTRL_OFF)
-						USART_send_bytes((const uint8_t *) "OFF\n", 4);
+						strcpy((char *) tx_buffer, "OFF\n");
 					else if (PID_controller_state == PID_CTRL_COOLING)
-						USART_send_bytes((const uint8_t *) "COOL\n", 5);
+						strcpy((char *) tx_buffer, "COOL\n");
 					else if (PID_controller_state == PID_CTRL_HEATING)
-						USART_send_bytes((const uint8_t *) "HEAT\n", 5);
+						strcpy((char *) tx_buffer, "HEAT\n");
 				} else {
 					goto CMD_ERROR;
 				}
+				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
 			} else if (EQ_CMD(cmd, ":RESET")) {
 				if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL0")) {
 					PID_controller_settings[0].sumError = 0;
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
 				} else if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL1")) {
 					PID_controller_settings[1].sumError = 0;
-					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				} else {
+					goto CMD_ERROR;
 				}
+				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else {
 				CMD_ERROR:
 				/* Shorten the cmd such that the error message does not overflow */
