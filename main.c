@@ -112,6 +112,8 @@ int main (void) {
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
 					int16_t setpoint = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
 					setpoint = temperature_to_ADC_Pt1000((int8_t)setpoint);
+					PID_controller_settings[0].sumError = 0;
+					PID_controller_settings[1].sumError = 0;
 					PID_controller_setpoint = setpoint;
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP0 "));
@@ -145,6 +147,8 @@ int main (void) {
 					} else {
 						goto CMD_ERROR;
 					}
+					PID_controller_settings[0].sumError = 0;
+					PID_controller_settings[1].sumError = 0;
 				} else {
 					goto CMD_ERROR;
 				}
