@@ -5,9 +5,12 @@ int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
 
 /* ADC values of Pt1000 measurements for temperatures -80, -72, -64, -56, -48,
    -40, -32, -24, -16, -8, +0, +8, +16, +24, +32, +40, +48, +56, +64, +72, +80 */
+/* ADC values of Pt1000 measurements for temperatures -8192, -7168, -6144, -5120,
+    -4096, -3072, -2048, -1024, +0, +1024, +2048, +3072, +4096, +5120, +6144,
+    +7168, +8192 (100 x degrees Celsius) */
 int16_t temperature_to_ADC_Pt1000_lookup [] = {
-	-598, -542, -488, -437, -387, -339, -292, -248, -204, -162, -122, -83,
-	-44, -8, +28, +63, +97, +129, +161, +192, +222
+	-611, -541, -475, -411, -345, -287, -231, -178,
+	-122, -73, -26, +19, +63, +109, +149, +188, +226
 };
 
 /* Temperature values (times 100) of Pt1000 measurements for ADC values -512, -448,
@@ -17,9 +20,9 @@ int16_t temperature_ADC_Pt1000_to_temp_lookup [] = {
 	+4027, +5570, +7204, +8938, +10781, +12744, +14839, +17080
 };
 
-int16_t temperature_to_ADC_Pt1000(int8_t temperature)
+int16_t temperature_to_ADC_Pt1000(int16_t temperature)
 {
-	int8_t a;
+	int16_t a;
 	int16_t A, B;
 
 	/* Get the index of the temperature in the table equal or just smaller
@@ -27,16 +30,16 @@ int16_t temperature_to_ADC_Pt1000(int8_t temperature)
 	int8_t index = temperature_to_ADC_Pt1000_lookup_index(temperature);
 
 	/* Temperature of the table entry */
-	a = (index << 3) - 80;
+	a = (index << 10) - 8192;
 
 	/* ADC value at temperature a */
 	A = temperature_to_ADC_Pt1000_lookup[index];
 
-	/* ADC value at temperature a + 8 (next table entry) */
+	/* ADC value at temperature a + 1024 (next table entry) */
 	B = temperature_to_ADC_Pt1000_lookup[index + 1];
 
-	/* Interpolate (+4: for rounding) */
-	return A + (((B - A) * (temperature - a) + 4) >> 3);
+	/* Interpolate (+512: for rounding) */
+	return A + (((B - A) * (temperature - a) + 512) >> 10);
 }
 
 int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC)
