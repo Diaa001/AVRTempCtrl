@@ -16,6 +16,7 @@
 #include "humidity.h"
 #include "interrupt.h"
 #include "pid.h"
+#include "eeprom.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -38,8 +39,19 @@ int main (void) {
 	ADC_init();
 
 	/* Initialize the PID controller data structures (one for heating and one for cooling) */
-	pid_Init(128, 0, 0, &PID_controller_settings[PID_CTRL_COOLING]);
-	pid_Init(128, 0, 0, &PID_controller_settings[PID_CTRL_HEATING]);
+	/* Get the initial values from the EEPROM */
+	int16_t kp, ki, kd;
+	kp = eeprom_read_word(EE_CTRL_KP0);
+	ki = eeprom_read_word(EE_CTRL_KI0);
+	kd = eeprom_read_word(EE_CTRL_KD0);
+	pid_Init(kp, ki, kd, &PID_controller_settings[PID_CTRL_COOLING]);
+	kp = eeprom_read_word(EE_CTRL_KP1);
+	ki = eeprom_read_word(EE_CTRL_KI1);
+	kd = eeprom_read_word(EE_CTRL_KD1);
+	pid_Init(kp, ki, kd, &PID_controller_settings[PID_CTRL_HEATING]);
+
+	/* Set the setpoint from the EEPROM memory */
+	PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
 
 	DDRD |= (1 << PD6);
 
@@ -208,6 +220,54 @@ int main (void) {
 					goto CMD_ERROR;
 				}
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
+			} else if (EQ_CMD(cmd, ":SAVE")) {
+				if (EQ_SUBCMD(cmd, ":SAVE", ":ALL")) {
+					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint);
+					eeprom_write_word(EE_CTRL_KP0, PID_controller_settings[0].P_Factor);
+					eeprom_write_word(EE_CTRL_KI0, PID_controller_settings[0].I_Factor);
+					eeprom_write_word(EE_CTRL_KD0, PID_controller_settings[0].D_Factor);
+					eeprom_write_word(EE_CTRL_KP1, PID_controller_settings[1].P_Factor);
+					eeprom_write_word(EE_CTRL_KI1, PID_controller_settings[1].I_Factor);
+					eeprom_write_word(EE_CTRL_KD1, PID_controller_settings[1].D_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":SETPOINT")) {
+					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KP0")) {
+					eeprom_write_word(EE_CTRL_KP0, PID_controller_settings[0].P_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KI0")) {
+					eeprom_write_word(EE_CTRL_KI0, PID_controller_settings[0].I_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KD0")) {
+					eeprom_write_word(EE_CTRL_KD0, PID_controller_settings[0].D_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KP1")) {
+					eeprom_write_word(EE_CTRL_KP1, PID_controller_settings[1].P_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KI1")) {
+					eeprom_write_word(EE_CTRL_KI1, PID_controller_settings[1].I_Factor);
+				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KD1")) {
+					eeprom_write_word(EE_CTRL_KD1, PID_controller_settings[1].D_Factor);
+				}
+			} else if (EQ_CMD(cmd, ":RECALL")) {
+				if (EQ_SUBCMD(cmd, ":RECALL", ":ALL")) {
+					PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
+					PID_controller_settings[0].I_Factor = eeprom_read_word(EE_CTRL_KI0);
+					PID_controller_settings[0].D_Factor = eeprom_read_word(EE_CTRL_KD0);
+					PID_controller_settings[1].P_Factor = eeprom_read_word(EE_CTRL_KP1);
+					PID_controller_settings[1].I_Factor = eeprom_read_word(EE_CTRL_KI1);
+					PID_controller_settings[1].D_Factor = eeprom_read_word(EE_CTRL_KD1);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":SETPOINT")) {
+					PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KP0")) {
+					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KI0")) {
+					PID_controller_settings[0].I_Factor = eeprom_read_word(EE_CTRL_KI0);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KD0")) {
+					PID_controller_settings[0].D_Factor = eeprom_read_word(EE_CTRL_KD0);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KP1")) {
+					PID_controller_settings[1].P_Factor = eeprom_read_word(EE_CTRL_KP1);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KI1")) {
+					PID_controller_settings[1].I_Factor = eeprom_read_word(EE_CTRL_KI1);
+				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KD1")) {
+					PID_controller_settings[1].D_Factor = eeprom_read_word(EE_CTRL_KD1);
+				}
 			} else {
 				CMD_ERROR:
 				/* Shorten the cmd such that the error message does not overflow */
