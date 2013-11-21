@@ -39,7 +39,7 @@ int16_t temperature_to_ADC_Pt1000(int16_t temperature)
 	B = temperature_to_ADC_Pt1000_lookup[index + 1];
 
 	/* Interpolate (+512: for rounding) */
-	return A + (((B - A) * (temperature - a) + 512) >> 10);
+	return A + (((B - A) * ((int32_t)(temperature - a)) + 512) >> 10);
 }
 
 int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC)
