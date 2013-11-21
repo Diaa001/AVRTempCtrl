@@ -3,11 +3,9 @@
 
 int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
 
-/* ADC values of Pt1000 measurements for temperatures -80, -72, -64, -56, -48,
-   -40, -32, -24, -16, -8, +0, +8, +16, +24, +32, +40, +48, +56, +64, +72, +80 */
 /* ADC values of Pt1000 measurements for temperatures -8192, -7168, -6144, -5120,
-    -4096, -3072, -2048, -1024, +0, +1024, +2048, +3072, +4096, +5120, +6144,
-    +7168, +8192 (100 x degrees Celsius) */
+   -4096, -3072, -2048, -1024, +0, +1024, +2048, +3072, +4096, +5120, +6144,
+   +7168, +8192 (100 x degrees Celsius) */
 int16_t temperature_to_ADC_Pt1000_lookup [] = {
 	-611, -539, -471, -406, -344, -285, -228, -174,
 	-122, -72, -24, +22, +67, +110, +151, +191, +229
