@@ -243,7 +243,10 @@ int main (void) {
 					eeprom_write_word(EE_CTRL_KI1, PID_controller_settings[1].I_Factor);
 				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KD1")) {
 					eeprom_write_word(EE_CTRL_KD1, PID_controller_settings[1].D_Factor);
+				} else {
+					goto CMD_ERROR;
 				}
+				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":RECALL")) {
 				if (EQ_SUBCMD(cmd, ":RECALL", ":ALL")) {
 					PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
@@ -267,7 +270,10 @@ int main (void) {
 					PID_controller_settings[1].I_Factor = eeprom_read_word(EE_CTRL_KI1);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KD1")) {
 					PID_controller_settings[1].D_Factor = eeprom_read_word(EE_CTRL_KD1);
+				} else {
+					goto CMD_ERROR;
 				}
+				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else {
 				CMD_ERROR:
 				/* Shorten the cmd such that the error message does not overflow */
