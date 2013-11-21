@@ -25,9 +25,9 @@
 #define PID_CTRL_COOLING	0
 #define PID_CTRL_HEATING	1
 #define PID_CTRL_OFF		2
-pidData_t PID_controller_settings[2];	///< Structures holding the PID controller parameters, the integral, and such
-uint8_t PID_controller_state;		///< Controller mode: PID_CTRL_OFF, PID_CTRL_COOLING, or PID_CTRL_HEATING
-int16_t PID_controller_setpoint;	///< Setpoint of the PID controller in ADC units
+pidData_t PID_controller_settings[2];		///< Structures holding the PID controller parameters, the integral, and such
+uint8_t PID_controller_state = PID_CTRL_OFF;	///< Controller mode: PID_CTRL_OFF, PID_CTRL_COOLING, or PID_CTRL_HEATING
+int16_t PID_controller_setpoint;		///< Setpoint of the PID controller in ADC units
 
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
