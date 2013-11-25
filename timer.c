@@ -25,7 +25,7 @@ void timer_8bit_cnt0_init(void)
 	TCCR0B |= (1 << CS02) | (1 << CS00);
 	TCCR0B &= ~(1 << CS01);
 
-	/* Set the counter frequency (f = F_CPU / 1024 / OCR0A) */
+	/* Set the counter frequency (f = F_CPU / 1024 / (1 + OCR0A)) */
 	OCR0A = 255;
 
 	/* Set the duty cycle (0: 0%, OCR0A: 100%) */
@@ -41,11 +41,13 @@ void timer_8bit_cnt0_init(void)
 void timer_16bit_cnt1_init(void)
 {
 	/* Initialize the timer value such that it starts at zero always after the PID task */
-	TCNT1 = -(TASK_PID * 1024 + 512);
+	TCNT1 = -(TASK_PID * 2048 + 1024);
 
-	/* Set waveform generation mode to fast PWM with OCRx update at BOTTOM */
-	TCCR1A |= (1 << WGM11) | (1 << WGM10);
-	TCCR1B |= (1 << WGM13) | (1 << WGM12);
+	/* Set waveform generation mode to phase and frequency correct PWM */
+	TCCR1B |= (1 << WGM13);
+	TCCR1B &= ~(1 << WGM12);
+	TCCR1A &= ~(1 << WGM11);
+	TCCR1A |= (1 << WGM10);
 
 	/* Set OC1A to normal port operation */
 	TCCR1A &= ~(1 << COM1A1);
@@ -55,16 +57,20 @@ void timer_16bit_cnt1_init(void)
 	TCCR1A &= ~(1 << COM1B0);
 	TCCR1A |= (1 << COM1B1);
 
-	/* Set the clock prescaler 1/256 */
-	TCCR1B &= ~((1 << CS11) | (1 << CS10));
-	TCCR1B |= (1 << CS12);
+	/* Set the clock prescaler 1/64 */
+	TCCR1B |= (1 << CS11) | (1 << CS10);
+	TCCR1B &= ~(1 << CS12);
 
-	/* Set the counter frequency (f = F_CPU / 64 / OCR1A) */
-	/* 1024: Timer0 clock division factor */
-	OCR1A = 1024 * NUMBER_OF_TASKS;
+	/* Set the counter frequency (f = F_CPU / (2 * 64 * OCR1A)) equal to NUMBER_OF_TASKS
+	   times the timer0 frequency.
+	   1024: timer0 clock perscaler
+	   255: timer0 TOP value
+	   64: timer1 clock prescaler */
+	//OCR1A = NUMBER_OF_TASKS * 1024 * (1 + 255) / (2 * 64);
+	OCR1A = 32768;
 
 	/* Set the duty cycle (0: 0%, OCR1A: 100%) */
-	OCR1B = 156;
+	OCR1B = 0;
 
 	/* Set the OC1B pin as output */
 	DDRD |= (1 << PD4);

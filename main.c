@@ -85,15 +85,16 @@ int main (void) {
 					/* Cooling requires reversed mode (output larger than zero when temperature error smaller than zero) */
 					controller_output = -controller_output;
 
-				/* Limit the controller output to positive values */
+				/* Calculate the duty cycle for the PWM. Negative values are not allowed and maximum controller_output is 32767.
+				   Maximum allowable PWM value is 32768. */
+				uint16_t pwm = 0;
 				if (controller_output < 0)
-					controller_output = 0;
-
-				/* Calculate the duty cycle for the PWM. Use a large integer because the multiplication exceeds the 16 bit range. */
-				uint32_t tmp = (((uint32_t) controller_output) * OCR1A + MAX_INT) >> 15;
+					pwm = 0;
+				else if (controller_output > 0)
+					pwm = ((uint16_t) controller_output) + 1;
 
 				/* Set the pulse width modulation (PWM) output */
-				OCR1B = (uint16_t) tmp;
+				OCR1B = pwm;
 			}
 			/* Disable the task flags */
 			_task = task;
