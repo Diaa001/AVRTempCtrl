@@ -17,6 +17,7 @@
 #include "interrupt.h"
 #include "pid.h"
 #include "eeprom.h"
+#include "encoder.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -52,6 +53,9 @@ int main (void) {
 
 	/* Set the setpoint from the EEPROM memory */
 	PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+
+	/* Enable the rotary encoder */
+	encoder_init();
 
 	DDRD |= (1 << PD6);
 
@@ -118,6 +122,23 @@ int main (void) {
 
 				/* Next measurement is temperature sensor 0 */
 				ADC_select_channel_diff_1_0_10x();
+			}
+		} else if (_encoder_increment) {
+			/* _encoder_increment could change at this point through an interrupt */
+
+			/* Save the rotary encoder increment quickly while suspending interrupts */
+			interrupts_suspend();
+			int8_t increment = _encoder_increment;
+			_encoder_increment = 0;
+			interrupts_resume();
+
+			/* Test for the increment again because it could have been reset between the if
+			   condition and the interrupt suspension. */
+			if (increment) {
+				/* Set the new PID controller setpoint using the increment */
+				int16_t setpoint = temperature_ADC_Pt1000_to_temp(PID_controller_setpoint);
+				setpoint = temperature_to_ADC_Pt1000(setpoint + increment * 100);
+				PID_controller_setpoint = setpoint;
 			}
 		} else if (rx_complete) {
 			char * cmd = (char *) rx_buffer[rx_buffer_sel];

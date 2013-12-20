@@ -3,6 +3,7 @@
 #include "usart.h"
 #include "timer.h"
 #include "adc.h"
+#include "encoder.h"
 
 uint8_t _sreg_save;
 
@@ -52,4 +53,43 @@ ISR(ADC_vect)
 
 	/* Set the conversion complete flag */
 	_ADC_result |= (1 << ADC_CONVERSION_COMPLETE_BIT);
+}
+
+ISR(PCINT1_vect)
+{
+	/* Get the new encoder state */
+	uint8_t new_state = PINB & ((1 << ENCODER_INPUT_A) | (1 << ENCODER_INPUT_B));
+
+	/* Compare with the previous state and set apply the increment.
+	   A clockwise rotation goes through the states 1..2..3..4 and then repeats
+	   whereas a counter clockwise rotation goes through 1..4..3..2 repeating.
+	   If somehow the rotation causes more than one increment it is ignored. */
+	if (_encoder_state == ENCODER_STATE_1) {
+		/* Next state is 2, previous is 4 */
+		if (new_state == ENCODER_STATE_2)
+			_encoder_increment += 1;
+		else if (new_state == ENCODER_STATE_4)
+			_encoder_increment -= 1;
+	} else if (_encoder_state == ENCODER_STATE_2) {
+		/* Next state is 3, previous is 1 */
+		if (new_state == ENCODER_STATE_3)
+			_encoder_increment += 1;
+		else if (new_state == ENCODER_STATE_1)
+			_encoder_increment -= 1;
+	} else if (_encoder_state == ENCODER_STATE_3) {
+		/* Next state is 4, previous is 2 */
+		if (new_state == ENCODER_STATE_4)
+			_encoder_increment += 1;
+		else if (new_state == ENCODER_STATE_2)
+			_encoder_increment -= 1;
+	} else if (_encoder_state == ENCODER_STATE_4) {
+		/* Next state is 1, previous is 3 */
+		if (new_state == ENCODER_STATE_1)
+			_encoder_increment += 1;
+		else if (new_state == ENCODER_STATE_3)
+			_encoder_increment -= 1;
+	}
+
+	/* Set the new encoder state */
+	_encoder_state = new_state;
 }
