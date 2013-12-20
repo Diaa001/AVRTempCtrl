@@ -28,7 +28,8 @@
 #define PID_CTRL_OFF		2
 pidData_t PID_controller_settings[2];		///< Structures holding the PID controller parameters, the integral, and such
 uint8_t PID_controller_state = PID_CTRL_OFF;	///< Controller mode: PID_CTRL_OFF, PID_CTRL_COOLING, or PID_CTRL_HEATING
-int16_t PID_controller_setpoint;		///< Setpoint of the PID controller in ADC units
+int16_t PID_controller_setpoint_T;		///< Setpoint of the PID controller in degrees Celsius (times 100)
+int16_t PID_controller_setpoint_ADC;		///< Setpoint of the PID controller in ADC units
 
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
@@ -52,7 +53,8 @@ int main (void) {
 	pid_Init(kp, ki, kd, &PID_controller_settings[PID_CTRL_HEATING]);
 
 	/* Set the setpoint from the EEPROM memory */
-	PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+	PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
+	PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
 
 	/* Enable the rotary encoder */
 	encoder_init();
@@ -80,7 +82,7 @@ int main (void) {
 
 				/* Determine the controller output (or if it it is off, at least update the values) */
 				int16_t controller_output;
-				controller_output = pid_Controller(PID_controller_setpoint, temperature_ADC[0] >> 6, &PID_controller_settings[active_PID]);
+				controller_output = pid_Controller(PID_controller_setpoint_ADC, temperature_ADC[0] >> 6, &PID_controller_settings[active_PID]);
 
 				/* Set the controller output sign (heating/cooling) or set it to zero when it's off */
 				if (PID_controller_state == PID_CTRL_OFF)
@@ -136,19 +138,17 @@ int main (void) {
 			   condition and the interrupt suspension. */
 			if (increment) {
 				/* Set the new PID controller setpoint using the increment */
-				int16_t setpoint = temperature_ADC_Pt1000_to_temp(PID_controller_setpoint);
-				setpoint = temperature_to_ADC_Pt1000(setpoint + increment * 100);
-				PID_controller_setpoint = setpoint;
+				PID_controller_setpoint_T += increment * 25;
+				PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
 			}
 		} else if (rx_complete) {
 			char * cmd = (char *) rx_buffer[rx_buffer_sel];
 			if (EQ_CMD(cmd, ":SET")) {
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
-					int16_t setpoint = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
-					setpoint = temperature_to_ADC_Pt1000(setpoint);
+					PID_controller_setpoint_T = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
+					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
 					PID_controller_settings[0].sumError = 0;
 					PID_controller_settings[1].sumError = 0;
-					PID_controller_setpoint = setpoint;
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP0 "));
 					PID_controller_settings[0].P_Factor = factor;
@@ -189,8 +189,7 @@ int main (void) {
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
-					int16_t temperature = temperature_ADC_Pt1000_to_temp(PID_controller_setpoint);
-					sprintf((char * ) tx_buffer, "%i/100\n", temperature);
+					sprintf((char * ) tx_buffer, "%i/100\n", PID_controller_setpoint_T);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
@@ -244,7 +243,7 @@ int main (void) {
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":SAVE")) {
 				if (EQ_SUBCMD(cmd, ":SAVE", ":ALL")) {
-					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint);
+					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint_T);
 					eeprom_write_word(EE_CTRL_KP0, PID_controller_settings[0].P_Factor);
 					eeprom_write_word(EE_CTRL_KI0, PID_controller_settings[0].I_Factor);
 					eeprom_write_word(EE_CTRL_KD0, PID_controller_settings[0].D_Factor);
@@ -252,7 +251,7 @@ int main (void) {
 					eeprom_write_word(EE_CTRL_KI1, PID_controller_settings[1].I_Factor);
 					eeprom_write_word(EE_CTRL_KD1, PID_controller_settings[1].D_Factor);
 				} else if (EQ_SUBCMD(cmd, ":SAVE", ":SETPOINT")) {
-					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint);
+					eeprom_write_word(EE_CTRL_SETPOINT, PID_controller_setpoint_T);
 				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KP0")) {
 					eeprom_write_word(EE_CTRL_KP0, PID_controller_settings[0].P_Factor);
 				} else if (EQ_SUBCMD(cmd, ":SAVE", ":KI0")) {
@@ -271,7 +270,8 @@ int main (void) {
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":RECALL")) {
 				if (EQ_SUBCMD(cmd, ":RECALL", ":ALL")) {
-					PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+					PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
+					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
 					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
 					PID_controller_settings[0].I_Factor = eeprom_read_word(EE_CTRL_KI0);
 					PID_controller_settings[0].D_Factor = eeprom_read_word(EE_CTRL_KD0);
@@ -279,7 +279,8 @@ int main (void) {
 					PID_controller_settings[1].I_Factor = eeprom_read_word(EE_CTRL_KI1);
 					PID_controller_settings[1].D_Factor = eeprom_read_word(EE_CTRL_KD1);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":SETPOINT")) {
-					PID_controller_setpoint = eeprom_read_word(EE_CTRL_SETPOINT);
+					PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
+					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KP0")) {
 					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KI0")) {
