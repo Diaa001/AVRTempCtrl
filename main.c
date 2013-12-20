@@ -189,7 +189,14 @@ int main (void) {
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
-					sprintf((char * ) tx_buffer, "%i/100\n", PID_controller_setpoint_T);
+					sprintf((char * ) tx_buffer, "%i\n", PID_controller_setpoint_T);
+					/* Divide the value by 100 in the text string using a decimal point */
+					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 1] = '\0';
+					tx_buffer[len + 0] = tx_buffer[len - 1];
+					tx_buffer[len - 1] = tx_buffer[len - 2];
+					tx_buffer[len - 2] = tx_buffer[len - 3];
+					tx_buffer[len - 3] = '.';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
@@ -214,13 +221,20 @@ int main (void) {
 					interrupts_resume();
 					adc_val /= 64;
 					int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
-					sprintf((char *) tx_buffer, "Temperature: %i/100 C\n", temperature);
+					sprintf((char *) tx_buffer, "%i\n", temperature);
+					/* Divide the value by 100 in the text string using a decimal point */
+					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 1] = '\0';
+					tx_buffer[len - 0] = tx_buffer[len - 1];
+					tx_buffer[len - 1] = tx_buffer[len - 2];
+					tx_buffer[len - 2] = tx_buffer[len - 3];
+					tx_buffer[len - 3] = '.';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
 					interrupts_suspend();
 					uint16_t adc_val2 = humidity_ADC[0];
 					interrupts_resume();
 					adc_val2 >>= 6;
-					sprintf((char *) tx_buffer, "Humidity: %i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
+					sprintf((char *) tx_buffer, "%i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":STATE")) {
 					if (PID_controller_state == PID_CTRL_OFF)
 						strcpy((char *) tx_buffer, "OFF\n");
@@ -232,6 +246,8 @@ int main (void) {
 					goto CMD_ERROR;
 				}
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+				/* Erase the transmit buffer */
+				memset((void *) tx_buffer, '\0', TX_BUFFER_LENGTH);
 			} else if (EQ_CMD(cmd, ":RESET")) {
 				if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL0")) {
 					PID_controller_settings[0].sumError = 0;
@@ -307,6 +323,9 @@ int main (void) {
 
 				/* Transmit the error message */
 				USART_send_bytes((uint8_t *) tx_buffer, strlen((const char *) tx_buffer));
+
+				/* Erase the transmit buffer */
+				memset((void *) tx_buffer, '\0', TX_BUFFER_LENGTH);
 			}
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
