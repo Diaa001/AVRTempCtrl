@@ -61,3 +61,58 @@ int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC)
 	int32_t tmp = A + (((((int32_t) B) - A) * (ADC - a) + 32) >> 6);
 	return (uint16_t) tmp;
 }
+
+uint8_t temperature_string_to_temp(const char * string, int16_t * temperature)
+{
+	/* Skip whitespace */
+	while (string[0] != '\0' && (string[0] == ' ' || string[0] == '\t'))
+		string++;
+
+	/* End of string reached? */
+	if (string[0] == '\0')
+		return 0;
+
+	/* Extract the sign */
+	uint8_t sign = 0;
+	if (string[0] == '-') {
+		sign = 1;
+		string++;
+	} else if (string[0] == '+') {
+		sign = 0;
+		string++;
+	} else if (string[0] != '.' && (string[0] < '0' || string[0] > '9')) {
+		return 0;
+	}
+
+	*temperature = 0;
+	while (string[0] >= '0' && string[0] <= '9') {
+		*temperature *= 10;
+		*temperature += string[0] - '0';
+		string++;
+	}
+
+	/* Multiply the temperature by 100 to avoid fractional numbers */
+	*temperature *= 100;
+
+	/* No decimal point? */
+	if (string[0] == '\0') {
+		if (sign)
+			*temperature = -(*temperature);
+		return 1;
+	} else if (string[0] == '.') {
+		string++;
+		/* Accept 2 decimal places */
+		if (string[0] >= '0' && string[0] <= '9') {
+			*temperature += 10 * (string[0] - '0');
+			string++;
+		}
+		if (string[0] >= '0' && string[0] <= '9') {
+			*temperature += string[0] - '0';
+		}
+		if (sign)
+			*temperature = -(*temperature);
+		return 1;
+	}
+
+	return 1;
+}

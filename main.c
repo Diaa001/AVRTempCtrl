@@ -145,10 +145,15 @@ int main (void) {
 			char * cmd = (char *) rx_buffer[rx_buffer_sel];
 			if (EQ_CMD(cmd, ":SET")) {
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
-					PID_controller_setpoint_T = atoi(SUBSTR(cmd, ":SET:SETPOINT "));
-					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
-					PID_controller_settings[0].sumError = 0;
-					PID_controller_settings[1].sumError = 0;
+					int16_t temperature;
+					if (temperature_string_to_temp(SUBSTR(cmd, ":SET:SETPOINT "), &temperature)) {
+						PID_controller_setpoint_T = temperature;
+						PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+						PID_controller_settings[0].sumError = 0;
+						PID_controller_settings[1].sumError = 0;
+					} else {
+						goto CMD_ERROR;
+					}
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KP0")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KP0 "));
 					PID_controller_settings[0].P_Factor = factor;
