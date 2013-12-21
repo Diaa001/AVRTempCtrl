@@ -116,3 +116,33 @@ uint8_t temperature_string_to_temp(const char * string, int16_t * temperature)
 
 	return 1;
 }
+
+void temperature_to_string(int16_t temperature, char * string)
+{
+	/* Determine the sign of the temperature */
+	if (temperature < 0) {
+		temperature = -temperature;
+		string[0] = '-';
+		string++;
+	}
+
+	/* Determine the number of characters required to print the temperature */
+	uint8_t characters = 4;
+	if (temperature >= 10000)
+		characters = 6;
+	else if (temperature >= 1000)
+		characters = 5;
+
+	/* Spell out the number */
+	string[characters] = '\0';
+	int8_t i;
+	for (i = characters - 1; i >= 0; i--) {
+		if (i == characters - 3) {
+			string[i] = '.';
+			continue;
+		}
+		int division = temperature / 10;
+		string[i] = temperature - 10 * division + '0';
+		temperature = division;
+	}
+}

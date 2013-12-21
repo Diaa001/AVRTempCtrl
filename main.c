@@ -194,14 +194,13 @@ int main (void) {
 				USART_send_bytes((const uint8_t *) "OK\n", 3);
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
-					sprintf((char * ) tx_buffer, "%i\n", PID_controller_setpoint_T);
-					/* Divide the value by 100 in the text string using a decimal point */
+					/* Convert the temperature to a string */
+					temperature_to_string(PID_controller_setpoint_T, tx_buffer);
+
+					/* Add a newline after the number */
 					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 0] = '\n';
 					tx_buffer[len + 1] = '\0';
-					tx_buffer[len + 0] = tx_buffer[len - 1];
-					tx_buffer[len - 1] = tx_buffer[len - 2];
-					tx_buffer[len - 2] = tx_buffer[len - 3];
-					tx_buffer[len - 3] = '.';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP0")) {
 					sprintf((char * ) tx_buffer, "%i\n", PID_controller_settings[0].P_Factor);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":KP1")) {
@@ -226,14 +225,14 @@ int main (void) {
 					interrupts_resume();
 					adc_val /= 64;
 					int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
-					sprintf((char *) tx_buffer, "%i\n", temperature);
-					/* Divide the value by 100 in the text string using a decimal point */
+
+					/* Convert the temperature to a string */
+					temperature_to_string(temperature, tx_buffer);
+
+					/* Add a newline after the number */
 					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 0] = '\n';
 					tx_buffer[len + 1] = '\0';
-					tx_buffer[len - 0] = tx_buffer[len - 1];
-					tx_buffer[len - 1] = tx_buffer[len - 2];
-					tx_buffer[len - 2] = tx_buffer[len - 3];
-					tx_buffer[len - 3] = '.';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
 					interrupts_suspend();
 					uint16_t adc_val2 = humidity_ADC[0];

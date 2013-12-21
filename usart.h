@@ -10,7 +10,7 @@ extern volatile char rx_buffer [2][RX_BUFFER_LENGTH];
 extern volatile uint8_t rx_buffer_pointer;
 extern volatile uint8_t rx_buffer_sel;
 extern volatile uint8_t rx_complete;
-extern volatile char tx_buffer [TX_BUFFER_LENGTH];
+extern char tx_buffer [TX_BUFFER_LENGTH];
 
 void USART_init(void);
 void USART_send_bytes(const uint8_t * data, uint8_t length);

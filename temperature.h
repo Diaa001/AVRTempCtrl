@@ -14,5 +14,6 @@ int16_t temperature_to_ADC_Pt1000(int16_t temperature);
 int16_t temperature_ADC_Pt1000_to_temp(int16_t A);
 
 uint8_t temperature_string_to_temp(const char * string, int16_t * temperature);
+void temperature_to_string(int16_t temperature, char * string);
 
 #endif /* __TEMPERATURE_H__ */

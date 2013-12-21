@@ -6,7 +6,7 @@ volatile char rx_buffer [2][RX_BUFFER_LENGTH];
 volatile uint8_t rx_buffer_sel;
 volatile uint8_t rx_buffer_pointer;
 volatile uint8_t rx_complete;
-volatile char tx_buffer [TX_BUFFER_LENGTH];
+char tx_buffer [TX_BUFFER_LENGTH];
 
 void USART_init(void)
 {
