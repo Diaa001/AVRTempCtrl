@@ -18,6 +18,7 @@
 #include "pid.h"
 #include "eeprom.h"
 #include "encoder.h"
+#include "spi.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -39,6 +40,7 @@ int main (void) {
 	timer_8bit_cnt0_init();
 	timer_16bit_cnt1_init();
 	ADC_init();
+	SPI_init();
 
 	/* Initialize the PID controller data structures (one for heating and one for cooling) */
 	/* Get the initial values from the EEPROM */
