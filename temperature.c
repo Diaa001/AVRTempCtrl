@@ -155,9 +155,15 @@ void temperature_ADS1248_init(uint8_t id)
 	if (id == 0) {
 		ADS1248_START_0_DDR |= (1 << ADS1248_START_0);
 		ADS1248_READY_0_DDR &= ~(1 << ADS1248_READY_0);
+
+		/* Enable the pin change interrupt for the READY signal */
+		PCICR |= (1 << ADS1248_READY_0_PCIE);
 	} else if (id == 1) {
 		ADS1248_START_1_DDR |= (1 << ADS1248_START_1);
 		ADS1248_READY_1_DDR &= ~(1 << ADS1248_READY_1);
+
+		/* Enable the pin change interrupt for the READY signal */
+		PCICR |= (1 << ADS1248_READY_1_PCIE);
 	}
 
 	/* Select the chip to receive SPI commands */
@@ -205,15 +211,22 @@ void temperature_ADS1248_init(uint8_t id)
 
 void temperature_ADS1248_start_conversion(uint8_t id)
 {
-	/* Pulse the START signal */
 	if (id == 0) {
+		/* Pulse the START signal */
 		ADS1248_START_0_PORT |= (1 << ADS1248_START_0);
 		_delay_us(1);
 		ADS1248_START_0_PORT &= ~(1 << ADS1248_START_0);
+
+		/* Enable the pin change interrupt on the READY signal */
+		ADS1248_READY_0_PCMSK |= (1 << ADS1248_READY_0_PCINT);
 	} else if (id == 1) {
+		/* Pulse the START signal */
 		ADS1248_START_1_PORT |= (1 << ADS1248_START_1);
 		_delay_us(1);
 		ADS1248_START_1_PORT &= ~(1 << ADS1248_START_1);
+
+		/* Enable the pin change interrupt on the READY signal */
+		ADS1248_READY_1_PCMSK |= (1 << ADS1248_READY_1_PCINT);
 	}
 }
 

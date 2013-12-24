@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "adc.h"
 #include "encoder.h"
+#include "temperature.h"
 
 uint8_t _sreg_save;
 
@@ -92,4 +93,13 @@ ISR(PCINT1_vect)
 
 	/* Set the new encoder state */
 	_encoder_state = new_state;
+}
+
+ISR(PCINT2_vect)
+{
+	uint8_t pin = ADS1248_READY_0_PIN;
+	if (pin & ADS1248_READY_0)
+		ADS1248_READY_0_PCMSK &= ~(1 << ADS1248_READY_0_PCINT);
+	if (pin & ADS1248_READY_1)
+		ADS1248_READY_1_PCMSK &= ~(1 << ADS1248_READY_1_PCINT);
 }
