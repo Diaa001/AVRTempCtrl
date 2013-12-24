@@ -62,5 +62,6 @@ void temperature_to_string(int16_t temperature, char * string);
 
 void temperature_ADS1248_init(uint8_t id);
 void temperature_ADS1248_start_conversion(uint8_t id);
+int16_t temperature_ADS1248_read_result(uint8_t id);
 
 #endif /* __TEMPERATURE_H__ */

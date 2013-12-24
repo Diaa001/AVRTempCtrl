@@ -216,3 +216,29 @@ void temperature_ADS1248_start_conversion(uint8_t id)
 		ADS1248_START_1_PORT &= ~(1 << ADS1248_START_1);
 	}
 }
+
+int16_t temperature_AADS1248_read_result(uint8_t id)
+{
+	/* Select the chip to receive SPI commands */
+	if (id == 0)
+		SPI_select(SPI_CS_ADS1248_0);
+	else if (id == 1)
+		SPI_select(SPI_CS_ADS1248_1);
+
+	/* Read the two significant bytes */
+	uint16_t result;
+	SPI_send(ADS1248_CMD_RDATA);
+	result = SPI_send_receive(ADS1248_CMD_NOP);
+	result = SPI_send_receive(ADS1248_CMD_NOP) | (result << 8);
+
+	/* Discard the least significant byte */
+	SPI_send_receive(ADS1248_CMD_NOP);
+
+	/* Deselect the chip */
+	if (id == 0)
+		SPI_deselect(SPI_CS_ADS1248_0);
+	else if (id == 1)
+		SPI_deselect(SPI_CS_ADS1248_1);
+
+	return (int16_t) result;
+}
