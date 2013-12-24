@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <util/delay.h>
 #include "temperature.h"
 #include "spi.h"
 
@@ -148,10 +149,22 @@ void temperature_to_string(int16_t temperature, char * string)
 	}
 }
 
-void temperature_ADS1248_init(uint8_t spi_cs)
+void temperature_ADS1248_init(uint8_t id)
 {
+	/* Set the start and ready pins as output / input */
+	if (id == 0) {
+		ADS1248_START_0_DDR |= (1 << ADS1248_START_0);
+		ADS1248_READY_0_DDR &= ~(1 << ADS1248_READY_0);
+	} else if (id == 1) {
+		ADS1248_START_1_DDR |= (1 << ADS1248_START_1);
+		ADS1248_READY_1_DDR &= ~(1 << ADS1248_READY_1);
+	}
+
 	/* Select the chip to receive SPI commands */
-	SPI_select(spi_cs);
+	if (id == 0)
+		SPI_select(SPI_CS_ADS1248_0);
+	else if (id == 1)
+		SPI_select(SPI_CS_ADS1248_1);
 
 	/* Start programming registers, start with MUX0 */
 	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
@@ -184,5 +197,22 @@ void temperature_ADS1248_init(uint8_t spi_cs)
 	SPI_send((0x0 << 4) | (0x1 << 0));
 
 	/* Deselect the chip */
-	SPI_deselect(spi_cs);
+	if (id == 0)
+		SPI_deselect(SPI_CS_ADS1248_0);
+	else if (id == 1)
+		SPI_deselect(SPI_CS_ADS1248_1);
+}
+
+void temperature_ADS1248_start_conversion(uint8_t id)
+{
+	/* Pulse the START signal */
+	if (id == 0) {
+		ADS1248_START_0_PORT |= (1 << ADS1248_START_0);
+		_delay_us(1);
+		ADS1248_START_0_PORT &= ~(1 << ADS1248_START_0);
+	} else if (id == 1) {
+		ADS1248_START_1_PORT |= (1 << ADS1248_START_1);
+		_delay_us(1);
+		ADS1248_START_1_PORT &= ~(1 << ADS1248_START_1);
+	}
 }

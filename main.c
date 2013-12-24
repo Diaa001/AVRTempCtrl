@@ -46,8 +46,8 @@ int main (void) {
 	_delay_ms(10);
 
 	/* Initialize the ADCs for Pt1000 temperature measurements */
-	temperature_ADS1248_init(SPI_CS_ADS1248_0);
-	temperature_ADS1248_init(SPI_CS_ADS1248_1);
+	temperature_ADS1248_init(0);
+	temperature_ADS1248_init(1);
 
 	/* Initialize the PID controller data structures (one for heating and one for cooling) */
 	/* Get the initial values from the EEPROM */

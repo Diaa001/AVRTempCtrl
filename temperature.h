@@ -33,6 +33,19 @@
 #define ADS1248_CMD_SYSGCAL	0x61
 #define ADS1248_CMD_SELFOCAL	0x62
 
+/* Start and ready ports and pins */
+#define ADS1248_START_0_PORT	PORTB
+#define ADS1248_START_0_DDR	DDRB
+#define ADS1248_START_0		PB4
+#define ADS1248_START_1_PORT	PORTC
+#define ADS1248_START_1_DDR	DDRC
+#define ADS1248_START_1		PC1
+#define ADS1248_READY_0_PORT	PORTC
+#define ADS1248_READY_0_DDR	DDRC
+#define ADS1248_READY_0		PC0
+#define ADS1248_READY_1_PORT	PORTC
+#define ADS1248_READY_1_DDR	DDRC
+#define ADS1248_READY_1		PC2
 
 #define TEMPERATURE_NUMBER_OF_ADC	1
 extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
@@ -47,6 +60,7 @@ int16_t temperature_ADC_Pt1000_to_temp(int16_t A);
 uint8_t temperature_string_to_temp(const char * string, int16_t * temperature);
 void temperature_to_string(int16_t temperature, char * string);
 
-void temperature_ADS1248_init(uint8_t spi_cs);
+void temperature_ADS1248_init(uint8_t id);
+void temperature_ADS1248_start_conversion(uint8_t id);
 
 #endif /* __TEMPERATURE_H__ */
