@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include "spi.h"
 
 void SPI_init(void)
 {
@@ -28,6 +29,16 @@ void SPI_init(void)
 
 	/* Enable SPI */
 	SPCR |= (1 << SPE);
+}
+
+void SPI_select(uint8_t cs)
+{
+	SPI_CS_PORT &= ~(1 << cs);
+}
+
+void SPI_deselect(uint8_t cs)
+{
+	SPI_CS_PORT |= (1 << cs);
 }
 
 uint8_t SPI_send_receive(uint8_t data)

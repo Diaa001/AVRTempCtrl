@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "temperature.h"
+#include "spi.h"
 
 int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
 
@@ -40,13 +41,13 @@ int16_t temperature_to_ADC_Pt1000(int16_t temperature)
 	return A + (((B - A) * ((int32_t)(temperature - a)) + 512) >> 10);
 }
 
-int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC)
+int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC_val)
 {
 	int16_t a;
 	int16_t A, B;
 
 	/* Get the index of the ADC value in the table equal or just smaller to 'ADC' */
-	int8_t index = temperature_ADC_Pt1000_to_temp_lookup_index(ADC);
+	int8_t index = temperature_ADC_Pt1000_to_temp_lookup_index(ADC_val);
 
 	/* ADC value of the table entry */
 	a = (index << 6) - 512;
@@ -145,4 +146,43 @@ void temperature_to_string(int16_t temperature, char * string)
 		string[i] = temperature - 10 * division + '0';
 		temperature = division;
 	}
+}
+
+void temperature_ADS1248_init(uint8_t spi_cs)
+{
+	/* Select the chip to receive SPI commands */
+	SPI_select(spi_cs);
+
+	/* Start programming registers, start with MUX0 */
+	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
+
+	/* Number of registers to program after MUX0 */
+	SPI_send(3);
+
+	/* Program register MUX0: BCS = off, inputs = AIN0, AIN1 */
+	SPI_send(0);
+
+	/* Program register VBIAS: all bias off */
+	SPI_send(0);
+
+	/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
+	SPI_send(0);
+
+	/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier), 5 samples per second */
+	SPI_send((0x4 << 4) | 0);
+
+	/* Program registers, continue with IDAC0 */
+	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC0);
+
+	/* NUMBER of registers to program after IDAC0 */
+	SPI_send(1);
+
+	/* Program register IDAC0: DRDY mode off, 500 uA excitation current */
+	SPI_send(0x4);
+
+	/* Program register IDAC1: Select AIN0 and AIN1 as excitation current outputs */
+	SPI_send((0x0 << 4) | (0x1 << 0));
+
+	/* Deselect the chip */
+	SPI_deselect(spi_cs);
 }

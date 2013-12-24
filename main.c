@@ -42,6 +42,13 @@ int main (void) {
 	ADC_init();
 	SPI_init();
 
+	/* Delay to allow slave devices to start up */
+	_delay_ms(10);
+
+	/* Initialize the ADCs for Pt1000 temperature measurements */
+	temperature_ADS1248_init(SPI_CS_ADS1248_0);
+	temperature_ADS1248_init(SPI_CS_ADS1248_1);
+
 	/* Initialize the PID controller data structures (one for heating and one for cooling) */
 	/* Get the initial values from the EEPROM */
 	int16_t kp, ki, kd;
