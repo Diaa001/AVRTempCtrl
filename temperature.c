@@ -166,6 +166,8 @@ void temperature_ADS1248_init(uint8_t id)
 		PCICR |= (1 << ADS1248_READY_1_PCIE);
 	}
 
+	SPI_set_sample_falling_edge();
+
 	/* Select the chip to receive SPI commands */
 	if (id == 0)
 		SPI_select(SPI_CS_ADS1248_0);
@@ -232,6 +234,8 @@ void temperature_ADS1248_start_conversion(uint8_t id)
 
 int16_t temperature_AADS1248_read_result(uint8_t id)
 {
+	SPI_set_sample_falling_edge();
+
 	/* Select the chip to receive SPI commands */
 	if (id == 0)
 		SPI_select(SPI_CS_ADS1248_0);

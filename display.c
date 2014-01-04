@@ -3,6 +3,8 @@
 
 void display_init(void)
 {
+	SPI_set_sample_rising_edge();
+
 	/* Set the decoding mode to Code-B font for all digits */
 	SPI_select(SPI_CS_MAX7221);
 	SPI_send(DISPLAY_REG_DECODE_MODE);
@@ -24,6 +26,8 @@ void display_init(void)
 
 void display_temperature(int16_t temperature)
 {
+	SPI_set_sample_rising_edge();
+
 	/* Values of each of the 5 digits */
 	uint8_t digit [5];
 
@@ -86,6 +90,8 @@ void display_temperature(int16_t temperature)
 
 void display_humidity(uint8_t humidity)
 {
+	SPI_set_sample_rising_edge();
+
 	/* Values of each of the 3 digits */
 	uint8_t digit [3];
 

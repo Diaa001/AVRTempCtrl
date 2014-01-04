@@ -15,14 +15,18 @@ void SPI_init(void)
 	/* Set the chip select pins as outputs */
 	DDRD |= (1 << PD5) | (1 << PD6) | (1 << PD7);
 
+	/* Set the bit order to MSB first */
+	SPCR &= ~(1 << DORD);
+
 	/* Set the clock polarity (normally low) */
 	SPCR &= ~(1 << CPOL);
 
-	/* Set the clock phase to sample at the falling edge */
+	/* Set the clock phase to setup at the leading edge and sample at the trailing edge */
 	SPCR |= (1 << CPHA);
 
 	/* Set the SPI clock frequency to f/16 */
-	SPCR |= (1 << SPE) | (1 << MSTR) | (1 << SPR0);
+	SPCR |= (1 << SPR0);
+	SPCR &= ~(1 << SPR1);
 
 	/* Select master mode */
 	SPCR |= (1 << MSTR);
