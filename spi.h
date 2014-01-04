@@ -6,6 +6,7 @@
 #define SPI_CS_PORT		PORTD
 #define SPI_CS_ADS1248_0	PD5
 #define SPI_CS_ADS1248_1	PD6
+#define SPI_CS_MAX7221		PD7
 
 #define SPI_send(a)	SPI_send_receive(a)
 
