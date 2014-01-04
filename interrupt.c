@@ -98,8 +98,11 @@ ISR(PCINT1_vect)
 ISR(PCINT2_vect)
 {
 	uint8_t pin = ADS1248_READY_0_PIN;
-	if (pin & ADS1248_READY_0)
+	if (pin & ADS1248_READY_0) {
 		ADS1248_READY_0_PCMSK &= ~(1 << ADS1248_READY_0_PCINT);
-	if (pin & ADS1248_READY_1)
+		_temperature_ADS1248_ready[0] |= TEMPERATURE_ADS1248_READY_FLAG;
+	} if (pin & ADS1248_READY_1) {
 		ADS1248_READY_1_PCMSK &= ~(1 << ADS1248_READY_1_PCINT);
+		_temperature_ADS1248_ready[1] |= TEMPERATURE_ADS1248_READY_FLAG;
+	}
 }

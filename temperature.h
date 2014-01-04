@@ -53,9 +53,12 @@
 #define ADS1248_READY_1_PCMSK	PCMSK2
 #define ADS1248_READY_1		PC2
 
-#define TEMPERATURE_NUMBER_OF_ADC	1
+#define TEMPERATURE_ADS1248_READY_FLAG	0x80
+
+#define TEMPERATURE_NUMBER_OF_ADC	2
 extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
-extern int16_t temperature_to_ADC_Pt1000_lookup [];
+#define TEMPERATURE_NUMBER_OF_ADS1248	2
+extern uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
 
 #define temperature_to_ADC_Pt1000_lookup_index(T)	(((T) + 8192) >> 10)
 #define temperature_ADC_Pt1000_to_temp_lookup_index(A)	(((A) + 512) >> 6)
@@ -66,8 +69,9 @@ int16_t temperature_ADC_Pt1000_to_temp(int16_t A);
 uint8_t temperature_string_to_temp(const char * string, int16_t * temperature);
 void temperature_to_string(int16_t temperature, char * string);
 
-void temperature_ADS1248_init(uint8_t id);
-void temperature_ADS1248_start_conversion(uint8_t id);
-int16_t temperature_ADS1248_read_result(uint8_t id);
+void temperature_ADS1248_init(void);
+void temperature_ADS1248_start_conversion(uint8_t channel);
+int8_t temperature_ADS1248_ready(void);
+int16_t temperature_ADS1248_read_result(uint8_t channel);
 
 #endif /* __TEMPERATURE_H__ */

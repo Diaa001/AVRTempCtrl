@@ -45,8 +45,7 @@ int main (void) {
 	_delay_ms(10);
 
 	/* Initialize the ADCs for Pt1000 temperature measurements */
-	temperature_ADS1248_init(0);
-	temperature_ADS1248_init(1);
+	temperature_ADS1248_init();
 
 	/* Initialize the 7 segment display controller */
 	display_init();
@@ -74,6 +73,8 @@ int main (void) {
 
 	interrupts_on();
 
+	int8_t ADS1248_channel;
+
 	/* Main loop */
 	while(1) {
 		/* Actions sorted by priority */
@@ -84,6 +85,8 @@ int main (void) {
 			if (task == TASK_ADC_TEMP_0 || task == TASK_ADC_HUM_0) {
 				/* Start a conversion. ADC input was already selected after last conversion completed. */
 				ADC_start_conversion();
+			} else if (task == TASK_ADC_TEMP_1) {
+				temperature_ADS1248_start_conversion(0);
 			} else if (task == TASK_PID) {
 				uint8_t active_PID = PID_controller_state;
 
@@ -130,6 +133,9 @@ int main (void) {
 			}
 			/* Disable the task flags */
 			_task = task;
+		} else if ((ADS1248_channel = temperature_ADS1248_ready()) >= 0) {
+			if (ADS1248_channel == 0)
+				temperature_ADC[1] = temperature_ADS1248_read_result(ADS1248_channel);
 		} else if (_ADC_result & (1 << ADC_CONVERSION_COMPLETE_BIT)) {
 			PORTD |= (1 << PD6);
 			/* Process completed ADC conversion */

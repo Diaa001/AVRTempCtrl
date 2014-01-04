@@ -2,8 +2,10 @@
 #include <util/delay.h>
 #include "temperature.h"
 #include "spi.h"
+#include "interrupt.h"
 
 int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
+uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
 
 /* ADC values of Pt1000 measurements for temperatures -8192, -7168, -6144, -5120,
    -4096, -3072, -2048, -1024, +0, +1024, +2048, +3072, +4096, +5120, +6144,
@@ -149,71 +151,75 @@ void temperature_to_string(int16_t temperature, char * string)
 	}
 }
 
-void temperature_ADS1248_init(uint8_t id)
+void temperature_ADS1248_init(void)
 {
-	/* Set the start and ready pins as output / input */
-	if (id == 0) {
-		ADS1248_START_0_DDR |= (1 << ADS1248_START_0);
-		ADS1248_READY_0_DDR &= ~(1 << ADS1248_READY_0);
+	/* Initialize both ADS1248 ADCs */
+	uint8_t id;
+	for (id = 0; id < 2; id++) {
+		/* Set the start and ready pins as output / input */
+		if (id == 0) {
+			ADS1248_START_0_DDR |= (1 << ADS1248_START_0);
+			ADS1248_READY_0_DDR &= ~(1 << ADS1248_READY_0);
 
-		/* Enable the pin change interrupt for the READY signal */
-		PCICR |= (1 << ADS1248_READY_0_PCIE);
-	} else if (id == 1) {
-		ADS1248_START_1_DDR |= (1 << ADS1248_START_1);
-		ADS1248_READY_1_DDR &= ~(1 << ADS1248_READY_1);
+			/* Enable the pin change interrupt for the READY signal */
+			PCICR |= (1 << ADS1248_READY_0_PCIE);
+		} else if (id == 1) {
+			ADS1248_START_1_DDR |= (1 << ADS1248_START_1);
+			ADS1248_READY_1_DDR &= ~(1 << ADS1248_READY_1);
 
-		/* Enable the pin change interrupt for the READY signal */
-		PCICR |= (1 << ADS1248_READY_1_PCIE);
+			/* Enable the pin change interrupt for the READY signal */
+			PCICR |= (1 << ADS1248_READY_1_PCIE);
+		}
+
+		SPI_set_sample_falling_edge();
+
+		/* Select the chip to receive SPI commands */
+		if (id == 0)
+			SPI_select(SPI_CS_ADS1248_0);
+		else if (id == 1)
+			SPI_select(SPI_CS_ADS1248_1);
+
+		/* Start programming registers, start with MUX0 */
+		SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
+
+		/* Number of registers to program after MUX0 */
+		SPI_send(3);
+
+		/* Program register MUX0: BCS = off, inputs = AIN0, AIN1 */
+		SPI_send(0);
+
+		/* Program register VBIAS: all bias off */
+		SPI_send(0);
+
+		/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
+		SPI_send(0);
+
+		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier), 5 samples per second */
+		SPI_send((0x4 << 4) | 0);
+
+		/* Program registers, continue with IDAC0 */
+		SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC0);
+
+		/* NUMBER of registers to program after IDAC0 */
+		SPI_send(1);
+
+		/* Program register IDAC0: DRDY mode off, 500 uA excitation current */
+		SPI_send(0x4);
+
+		/* Program register IDAC1: Select AIN0 and AIN1 as excitation current outputs */
+		SPI_send((0x0 << 4) | (0x1 << 0));
+
+		/* Deselect the chip */
+		if (id == 0)
+			SPI_deselect(SPI_CS_ADS1248_0);
+		else if (id == 1)
+			SPI_deselect(SPI_CS_ADS1248_1);
 	}
-
-	SPI_set_sample_falling_edge();
-
-	/* Select the chip to receive SPI commands */
-	if (id == 0)
-		SPI_select(SPI_CS_ADS1248_0);
-	else if (id == 1)
-		SPI_select(SPI_CS_ADS1248_1);
-
-	/* Start programming registers, start with MUX0 */
-	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
-
-	/* Number of registers to program after MUX0 */
-	SPI_send(3);
-
-	/* Program register MUX0: BCS = off, inputs = AIN0, AIN1 */
-	SPI_send(0);
-
-	/* Program register VBIAS: all bias off */
-	SPI_send(0);
-
-	/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
-	SPI_send(0);
-
-	/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier), 5 samples per second */
-	SPI_send((0x4 << 4) | 0);
-
-	/* Program registers, continue with IDAC0 */
-	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC0);
-
-	/* NUMBER of registers to program after IDAC0 */
-	SPI_send(1);
-
-	/* Program register IDAC0: DRDY mode off, 500 uA excitation current */
-	SPI_send(0x4);
-
-	/* Program register IDAC1: Select AIN0 and AIN1 as excitation current outputs */
-	SPI_send((0x0 << 4) | (0x1 << 0));
-
-	/* Deselect the chip */
-	if (id == 0)
-		SPI_deselect(SPI_CS_ADS1248_0);
-	else if (id == 1)
-		SPI_deselect(SPI_CS_ADS1248_1);
 }
 
-void temperature_ADS1248_start_conversion(uint8_t id)
+void temperature_ADS1248_start_conversion(uint8_t channel)
 {
-	if (id == 0) {
+	if (channel < 4) {
 		/* Pulse the START signal */
 		ADS1248_START_0_PORT |= (1 << ADS1248_START_0);
 		_delay_us(1);
@@ -221,7 +227,8 @@ void temperature_ADS1248_start_conversion(uint8_t id)
 
 		/* Enable the pin change interrupt on the READY signal */
 		ADS1248_READY_0_PCMSK |= (1 << ADS1248_READY_0_PCINT);
-	} else if (id == 1) {
+		_temperature_ADS1248_ready[0] = channel;
+	} else {
 		/* Pulse the START signal */
 		ADS1248_START_1_PORT |= (1 << ADS1248_START_1);
 		_delay_us(1);
@@ -229,17 +236,38 @@ void temperature_ADS1248_start_conversion(uint8_t id)
 
 		/* Enable the pin change interrupt on the READY signal */
 		ADS1248_READY_1_PCMSK |= (1 << ADS1248_READY_1_PCINT);
+		_temperature_ADS1248_ready[1] = channel;
 	}
 }
 
-int16_t temperature_AADS1248_read_result(uint8_t id)
+int8_t temperature_ADS1248_ready(void) {
+	/* If no channel is ready, return -1; */
+	uint8_t channel = -1;
+
+	interrupts_suspend();
+
+	/* Determine the ADS1248 channel that is ready */
+	if (_temperature_ADS1248_ready[0] & TEMPERATURE_ADS1248_READY_FLAG) {
+		_temperature_ADS1248_ready[0] &= ~TEMPERATURE_ADS1248_READY_FLAG;
+		channel = _temperature_ADS1248_ready[0];
+	} else if (_temperature_ADS1248_ready[1] & TEMPERATURE_ADS1248_READY_FLAG) {
+		_temperature_ADS1248_ready[1] &= ~TEMPERATURE_ADS1248_READY_FLAG;
+		channel = _temperature_ADS1248_ready[1];
+	}
+
+	interrupts_resume();
+
+	return channel;
+}
+
+int16_t temperature_ADS1248_read_result(uint8_t channel)
 {
 	SPI_set_sample_falling_edge();
 
 	/* Select the chip to receive SPI commands */
-	if (id == 0)
+	if (channel < 4)
 		SPI_select(SPI_CS_ADS1248_0);
-	else if (id == 1)
+	else
 		SPI_select(SPI_CS_ADS1248_1);
 
 	/* Read the two significant bytes */
@@ -252,9 +280,9 @@ int16_t temperature_AADS1248_read_result(uint8_t id)
 	SPI_send_receive(ADS1248_CMD_NOP);
 
 	/* Deselect the chip */
-	if (id == 0)
+	if (channel < 4)
 		SPI_deselect(SPI_CS_ADS1248_0);
-	else if (id == 1)
+	else
 		SPI_deselect(SPI_CS_ADS1248_1);
 
 	return (int16_t) result;
