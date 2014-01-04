@@ -42,7 +42,7 @@ MCU = atmega324p
 
 # Main Oscillator Frequency
 # This is only used to define F_OSC in all assembler and c-sources.
-F_OSC = 3686400
+F_OSC = 4000000UL
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
@@ -112,6 +112,7 @@ CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -DF_OSC=$(F_OSC)
+CFLAGS += -DF_CPU=$(F_OSC)
 
 
 

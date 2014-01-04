@@ -4,8 +4,6 @@
 #include <string.h>
 #include <avr/io.h>
 
-#define F_CPU 4000000UL
-
 #include <util/delay.h>
 
 #include "usart.h"
