@@ -29,6 +29,6 @@
 
 void display_init(void);
 void display_temperature(int16_t temperature);
-void display_humidity(int8_t humidity);
+void display_humidity(uint8_t humidity);
 
 #endif /* __DISPLAY_H__ */

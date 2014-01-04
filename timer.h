@@ -5,7 +5,7 @@
 #define TASK_ADC_TEMP_0	0	///< Task that measures the temperature with temperature sensor 0
 #define TASK_ADC_HUM_0	1	///< Task that measures the humidity with humidity sensor 0
 #define TASK_PID	2	///< Task that performs the PID calculation and PWM
-#define TASK_IDLE_12	3	///< Dummy task that does not process anything
+#define TASK_DISPLAY	3	///< Task that updates the 7 segment display
 #define TASK_IDLE_11	4	///< Dummy task that does not process anything
 #define TASK_IDLE_10	5	///< Dummy task that does not process anything
 #define TASK_IDLE_9	6	///< Dummy task that does not process anything

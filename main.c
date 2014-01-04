@@ -19,6 +19,7 @@
 #include "eeprom.h"
 #include "encoder.h"
 #include "spi.h"
+#include "display.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -48,6 +49,9 @@ int main (void) {
 	/* Initialize the ADCs for Pt1000 temperature measurements */
 	temperature_ADS1248_init(0);
 	temperature_ADS1248_init(1);
+
+	/* Initialize the 7 segment display controller */
+	display_init();
 
 	/* Initialize the PID controller data structures (one for heating and one for cooling) */
 	/* Get the initial values from the EEPROM */
@@ -110,6 +114,21 @@ int main (void) {
 
 				/* Set the pulse width modulation (PWM) output */
 				OCR1B = pwm;
+			} else if (task == TASK_DISPLAY) {
+				interrupts_suspend();
+				int16_t adc_val = (int16_t) temperature_ADC[0];
+				interrupts_resume();
+				adc_val /= 64;
+				int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
+
+				interrupts_suspend();
+				uint16_t adc_val2 = humidity_ADC[0];
+				interrupts_resume();
+				adc_val2 >>= 6;
+				uint8_t humidity = honeywell_convert_ADC_to_RH(adc_val2);
+
+				display_temperature(temperature);
+				display_humidity(humidity);
 			}
 			/* Disable the task flags */
 			_task = task;
