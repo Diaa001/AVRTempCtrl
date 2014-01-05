@@ -5,6 +5,7 @@
 #include "adc.h"
 #include "encoder.h"
 #include "temperature.h"
+#include "buttons.h"
 
 uint8_t _sreg_save;
 
@@ -107,5 +108,23 @@ ISR(PCINT2_vect)
 	if (pin & ADS1248_READY_1) {
 		ADS1248_READY_1_PCMSK &= ~(1 << ADS1248_READY_1_PCINT);
 		_temperature_ADS1248_ready[1] |= TEMPERATURE_ADS1248_READY_FLAG;
+	}
+
+	if ((pin & BUTTON_0) && !(_button_state[0] & BUTTON_STATE_FLAG)) {
+		_button_state[0] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
+	} else if (!(pin & BUTTON_0) && (_button_state[0] & BUTTON_STATE_FLAG)) {
+		_button_state[0] = BUTTON_CHANGED_FLAG;
+	}
+
+	if ((pin & BUTTON_1) && !(_button_state[1] & BUTTON_STATE_FLAG)) {
+		_button_state[1] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
+	} else if (!(pin & BUTTON_1) && (_button_state[1] & BUTTON_STATE_FLAG)) {
+		_button_state[1] = BUTTON_CHANGED_FLAG;
+	}
+
+	if ((pin & BUTTON_2) && !(_button_state[2] & BUTTON_STATE_FLAG)) {
+		_button_state[2] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
+	} else if (!(pin & BUTTON_2) && (_button_state[2] & BUTTON_STATE_FLAG)) {
+		_button_state[2] = BUTTON_CHANGED_FLAG;
 	}
 }
