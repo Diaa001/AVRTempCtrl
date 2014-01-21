@@ -18,6 +18,7 @@
 #include "encoder.h"
 #include "spi.h"
 #include "display.h"
+#include "led.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -38,6 +39,7 @@ int main (void) {
 	USART_init();
 	timer_8bit_cnt0_init();
 	timer_16bit_cnt1_init();
+	LED_init();
 	ADC_init();
 	SPI_init();
 
@@ -211,10 +213,13 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE")) {
 					if (EQ_SUBCMD(cmd, ":SET:STATE ", "OFF")) {
 						PID_controller_state = PID_CTRL_OFF;
+						LED_set(LED_ACTIVE, LED_OFF);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "COOL")) {
 						PID_controller_state = PID_CTRL_COOLING;
+						LED_set(LED_ACTIVE, LED_ON);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "HEAT")) {
 						PID_controller_state = PID_CTRL_HEATING;
+						LED_set(LED_ACTIVE, LED_ON);
 					} else {
 						goto CMD_ERROR;
 					}
