@@ -25,6 +25,8 @@
 #define BUTTON_STATE_FLAG		0x01
 #define BUTTON_CHANGED_FLAG		0x80
 
+#define BUTTON_CTRL			0
+
 extern uint8_t _button_state [BUTTONS_NUM];
 
 void buttons_init(void);

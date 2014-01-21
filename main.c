@@ -19,6 +19,7 @@
 #include "spi.h"
 #include "display.h"
 #include "led.h"
+#include "buttons.h"
 
 #define SUBSTR(A, B)		((A) + strlen(B))
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
@@ -40,6 +41,7 @@ int main (void) {
 	timer_8bit_cnt0_init();
 	timer_16bit_cnt1_init();
 	LED_init();
+	buttons_init();
 	ADC_init();
 	SPI_init();
 
@@ -174,6 +176,18 @@ int main (void) {
 				/* Set the new PID controller setpoint using the increment */
 				PID_controller_setpoint_T += increment * 25;
 				PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+			}
+		} else if (_button_state[BUTTON_CTRL] == (BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG)) {
+			/* Turn off the changed flag of the button state */
+			_button_state[BUTTON_CTRL] &= ~(BUTTON_CHANGED_FLAG);
+
+			/* Toggle the PID controller state */
+			if (PID_controller_state == PID_CTRL_OFF) {
+				PID_controller_state = PID_CTRL_COOLING;
+				LED_set(LED_ACTIVE, LED_ON);
+			} else {
+				PID_controller_state = PID_CTRL_OFF;
+				LED_set(LED_ACTIVE, LED_OFF);
 			}
 		} else if (rx_complete) {
 			char * cmd = (char *) rx_buffer[rx_buffer_sel];
