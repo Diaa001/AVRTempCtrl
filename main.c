@@ -284,6 +284,19 @@ int main (void) {
 					uint8_t len = strlen(tx_buffer);
 					tx_buffer[len + 0] = '\n';
 					tx_buffer[len + 1] = '\0';
+				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE1")) {
+					interrupts_suspend();
+					int16_t adc_val = (int16_t) temperature_ADC[1];
+					interrupts_resume();
+					int16_t temperature = adc_val;
+
+					/* Convert the temperature to a string */
+					temperature_to_string(temperature, tx_buffer);
+
+					/* Add a newline after the number */
+					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 0] = '\n';
+					tx_buffer[len + 1] = '\0';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
 					interrupts_suspend();
 					uint16_t adc_val2 = humidity_ADC[0];
