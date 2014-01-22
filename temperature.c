@@ -22,6 +22,16 @@ int16_t temperature_ADC_Pt1000_to_temp_lookup [] = {
 	+4027, +5570, +7204, +8938, +10781, +12744, +14839, +17080
 };
 
+/* ADC values of ADS1248 measurements for temperatures -6144, -5120, -4096, -3072, -2048, -1024, 0, 1024, 2048, 3072, 4096, 5120, 6144 (100 x degrees Celsius) */
+int16_t temperature_to_ADS1248_lookup [] = {
+	-31760, -26427, -21110, -15809, -10524, -5254, 0, 5237, 10459, 15665, 20855, 26029, 31188
+};
+
+/* Temperature values (times 100) of ADS1248 measurements for ADC values -32768, -28672, -24576, -20480, -16384, -12288, -8192, -4096, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768 */
+int16_t temperature_ADS1248_to_temp_lookup [] = {
+	-6337, -5551, -4763, -3974, -3183, -2390, -1595, -798, 0, 800, 1602, 2407, 3213, 4021, 4831, 5644, 6458
+};
+
 int16_t temperature_to_ADC_Pt1000(int16_t temperature)
 {
 	int16_t a;
@@ -62,7 +72,56 @@ int16_t temperature_ADC_Pt1000_to_temp(int16_t ADC_val)
 	B = temperature_ADC_Pt1000_to_temp_lookup[index + 1];
 
 	/* Interpolate (+32: for rounding). Use 32 bit integers because intermediate values are large. */
-	int32_t tmp = A + (((((int32_t) B) - A) * (ADC - a) + 32) >> 6);
+	int32_t tmp = A + (((((int32_t) B) - A) * (ADC_val - a) + 32) >> 6);
+	return (uint16_t) tmp;
+}
+
+int16_t temperature_to_ADS1248(int16_t temperature)
+{
+	int16_t a;
+	int16_t A, B;
+
+	if (temperature < ADS1248_LOOKUP_TMIN)
+		temperature = ADS1248_LOOKUP_TMIN;
+	if (temperature > ADS1248_LOOKUP_TMAX)
+		temperature = ADS1248_LOOKUP_TMAX;
+
+	/* Get the index of the temperature in the table equal or just smaller
+	   to 'temperature' */
+	int8_t index = temperature_to_ADS1248_lookup_index(temperature);
+
+	/* Temperature of the table entry */
+	a = (index << ADS1248_LOOKUP_TSTEP_LOG) + ADS1248_LOOKUP_TMIN;
+
+	/* ADC value at temperature a */
+	A = temperature_to_ADS1248_lookup[index];
+
+	/* ADC value at temperature a + 1024 (next table entry) */
+	B = temperature_to_ADS1248_lookup[index + 1];
+
+	/* Interpolate (+512: for rounding) */
+	return A + (((B - A) * ((int32_t)(temperature - a)) + ADS1248_LOOKUP_TSTEP / 2) >> ADS1248_LOOKUP_TSTEP_LOG);
+}
+
+int16_t temperature_ADS1248_to_temp(int16_t ADC_val)
+{
+	int16_t a;
+	int16_t A, B;
+
+	/* Get the index of the ADC value in the table equal or just smaller to 'ADC' */
+	int8_t index = temperature_ADS1248_to_temp_lookup_index(ADC_val);
+
+	/* ADC value of the table entry */
+	a = (index << ADS1248_LOOKUP_ADCSTEP_LOG) + ADS1248_LOOKUP_ADCMIN;
+
+	/* Temperature (x100) at ADC value a */
+	A = temperature_ADS1248_to_temp_lookup[index];
+
+	/* Temperature (x100) at ADC value a + 64 (next table entry) */
+	B = temperature_ADS1248_to_temp_lookup[index + 1];
+
+	/* Interpolate (+32: for rounding). Use 32 bit integers because intermediate values are large. */
+	int32_t tmp = A + (((((int32_t) B) - A) * (ADC_val - a) + ADS1248_LOOKUP_ADCSTEP / 2) >> ADS1248_LOOKUP_ADCSTEP_LOG);
 	return (uint16_t) tmp;
 }
 
