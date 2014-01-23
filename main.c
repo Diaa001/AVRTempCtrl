@@ -288,7 +288,7 @@ int main (void) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[1];
 					interrupts_resume();
-					int16_t temperature = adc_val;
+					int16_t temperature = temperature_ADS1248_to_temp(adc_val);
 
 					/* Convert the temperature to a string */
 					temperature_to_string(temperature, tx_buffer);
@@ -297,6 +297,16 @@ int main (void) {
 					uint8_t len = strlen(tx_buffer);
 					tx_buffer[len + 0] = '\n';
 					tx_buffer[len + 1] = '\0';
+				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPADC0")) {
+					interrupts_suspend();
+					int16_t adc_val = (int16_t) temperature_ADC[0];
+					interrupts_resume();
+					sprintf((char *) tx_buffer, "%hi\n", adc_val);
+				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPADC1")) {
+					interrupts_suspend();
+					int16_t adc_val = (int16_t) temperature_ADC[1];
+					interrupts_resume();
+					sprintf((char *) tx_buffer, "%hi\n", adc_val);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
 					interrupts_suspend();
 					uint16_t adc_val2 = humidity_ADC[0];
