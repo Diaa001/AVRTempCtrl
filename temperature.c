@@ -253,8 +253,8 @@ void temperature_ADS1248_init(void)
 		/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
 		SPI_send(0);
 
-		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier), 5 samples per second */
-		SPI_send((0x4 << 4) | 0);
+		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier) to 8x, 40 samples per second */
+		SPI_send((0x3 << 4) | 0x3);
 
 		/* Program registers, continue with IDAC0 */
 		SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC0);
@@ -276,8 +276,45 @@ void temperature_ADS1248_init(void)
 	}
 }
 
+static void temperature_ADS1248_select_sensor(uint8_t channel)
+{
+	if (channel < 4)
+		SPI_select(SPI_CS_ADS1248_0);
+	else
+		SPI_select(SPI_CS_ADS1248_1);
+
+	/* Start programming registers, start with MUX0 */
+	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
+
+	/* Number of registers to program after MUX0 */
+	SPI_send(1);
+
+	/* Program register MUX0: BCS = off, inputs = AIN[2 * channel], AIN[2 * channel + 1] */
+	SPI_send(((channel & 0x3) << 4) | (((channel & 0x3) << 1) + 1));
+
+	/* Program registers, continue with IDAC1 */
+	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC1);
+
+	/* NUMBER of registers to program after IDAC1 */
+	SPI_send(1);
+
+	/* Program register IDAC1: Select AIN[2 * channel] and AIN[2 * channel + 1] as excitation current outputs */
+	SPI_send(((channel & 0x3) << 5) | (((channel & 0x3) << 1) + 1));
+
+	if (channel < 4)
+		SPI_deselect(SPI_CS_ADS1248_0);
+	else
+		SPI_deselect(SPI_CS_ADS1248_1);
+}
+
 void temperature_ADS1248_start_conversion(uint8_t channel)
 {
+	/* Select the sensor to measure before starting the conversion */
+	temperature_ADS1248_select_sensor(channel);
+
+	/* Wait for the ADC to settle */
+	_delay_ms(30);
+
 	if (channel < 4) {
 		/* Pulse the START signal */
 		ADS1248_START_0_PORT |= (1 << ADS1248_START_0);
