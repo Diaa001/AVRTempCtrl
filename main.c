@@ -68,7 +68,7 @@ int main (void) {
 
 	/* Set the setpoint from the EEPROM memory */
 	PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
-	PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+	PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
 
 	/* Enable the rotary encoder */
 	encoder_init();
@@ -83,15 +83,15 @@ int main (void) {
 	/* Main loop */
 	while(1) {
 		/* Actions sorted by priority */
-		if (_task & 0xc0) {
+		if (_task & TASK_START) {
 			PORTB |= (1 << PA7);
 			/* Process scheduled tasks */
 			uint8_t task = _task & 0x3f;
-			if (task == TASK_ADC_TEMP_0 || task == TASK_ADC_HUM_0) {
+			if (task == TASK_ADC_TEMP_0) {
+				temperature_ADS1248_start_conversion(0);
+			} else if (task == TASK_ADC_HUM_0) {
 				/* Start a conversion. ADC input was already selected after last conversion completed. */
 				ADC_start_conversion();
-			} else if (task == TASK_ADC_TEMP_1) {
-				temperature_ADS1248_start_conversion(0);
 			} else if (task == TASK_PID) {
 				uint8_t active_PID = PID_controller_state;
 
@@ -125,7 +125,7 @@ int main (void) {
 				int16_t adc_val = (int16_t) temperature_ADC[0];
 				interrupts_resume();
 				adc_val /= 64;
-				int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
+				int16_t temperature = temperature_ADS1248_to_temp(adc_val);
 
 				interrupts_suspend();
 				uint16_t adc_val2 = humidity_ADC[0];
@@ -140,26 +140,22 @@ int main (void) {
 			_task = task;
 		} else if ((ADS1248_channel = temperature_ADS1248_ready()) >= 0) {
 			if (ADS1248_channel == 0)
-				temperature_ADC[1] = temperature_ADS1248_read_result(ADS1248_channel);
+				temperature_ADC[0] = temperature_ADS1248_read_result(ADS1248_channel);
 		} else if (_ADC_result & (1 << ADC_CONVERSION_COMPLETE_BIT)) {
-			/* Process completed ADC conversion */
-
 			/* Disable the conversion complete flag */
+			interrupts_suspend();
 			_ADC_result &= ~(1 << ADC_CONVERSION_COMPLETE_BIT);
+			uint16_t result = _ADC_result;
+			interrupts_resume();
 
+			/* Process completed ADC conversion */
 			uint8_t task = _task & 0x3f;
-			if (task == TASK_ADC_TEMP_0) {
+			if (task == TASK_ADC_HUM_0) {
 				/* Store the ADC value */
-				temperature_ADC[0] = _ADC_result;
+				humidity_ADC[0] = result;
 
-				/* Next measurement is humidity sensor 0 */
-				ADC_select_channel_2();
-			} else if (task == TASK_ADC_HUM_0) {
-				/* Store the ADC value */
-				humidity_ADC[0] = _ADC_result;
-
-				/* Next measurement is temperature sensor 0 */
-				ADC_select_channel_diff_1_0_10x();
+				/* Next measurement is humidity sensor 0 (again) */
+				// ADC_select_channel_2();
 			}
 		} else if (_encoder_increment) {
 			/* _encoder_increment could change at this point through an interrupt */
@@ -175,7 +171,7 @@ int main (void) {
 			if (increment) {
 				/* Set the new PID controller setpoint using the increment */
 				PID_controller_setpoint_T += increment * 25;
-				PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+				PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
 			}
 		} else if (_button_state[BUTTON_CTRL] == (BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG)) {
 			/* Turn off the changed flag of the button state */
@@ -196,7 +192,7 @@ int main (void) {
 					int16_t temperature;
 					if (temperature_string_to_temp(SUBSTR(cmd, ":SET:SETPOINT "), &temperature)) {
 						PID_controller_setpoint_T = temperature;
-						PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+						PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
 						PID_controller_settings[0].sumError = 0;
 						PID_controller_settings[1].sumError = 0;
 					} else {
@@ -274,20 +270,6 @@ int main (void) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[0];
 					interrupts_resume();
-					adc_val /= 64;
-					int16_t temperature = temperature_ADC_Pt1000_to_temp(adc_val);
-
-					/* Convert the temperature to a string */
-					temperature_to_string(temperature, tx_buffer);
-
-					/* Add a newline after the number */
-					uint8_t len = strlen(tx_buffer);
-					tx_buffer[len + 0] = '\n';
-					tx_buffer[len + 1] = '\0';
-				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE1")) {
-					interrupts_suspend();
-					int16_t adc_val = (int16_t) temperature_ADC[1];
-					interrupts_resume();
 					int16_t temperature = temperature_ADS1248_to_temp(adc_val);
 
 					/* Convert the temperature to a string */
@@ -300,11 +282,6 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPADC0")) {
 					interrupts_suspend();
 					int16_t adc_val = (int16_t) temperature_ADC[0];
-					interrupts_resume();
-					sprintf((char *) tx_buffer, "%hi\n", adc_val);
-				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPADC1")) {
-					interrupts_suspend();
-					int16_t adc_val = (int16_t) temperature_ADC[1];
 					interrupts_resume();
 					sprintf((char *) tx_buffer, "%hi\n", adc_val);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":HUMIDITY0")) {
@@ -365,7 +342,7 @@ int main (void) {
 			} else if (EQ_CMD(cmd, ":RECALL")) {
 				if (EQ_SUBCMD(cmd, ":RECALL", ":ALL")) {
 					PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
-					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+					PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
 					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
 					PID_controller_settings[0].I_Factor = eeprom_read_word(EE_CTRL_KI0);
 					PID_controller_settings[0].D_Factor = eeprom_read_word(EE_CTRL_KD0);
@@ -374,7 +351,7 @@ int main (void) {
 					PID_controller_settings[1].D_Factor = eeprom_read_word(EE_CTRL_KD1);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":SETPOINT")) {
 					PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
-					PID_controller_setpoint_ADC = temperature_to_ADC_Pt1000(PID_controller_setpoint_T);
+					PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KP0")) {
 					PID_controller_settings[0].P_Factor = eeprom_read_word(EE_CTRL_KP0);
 				} else if (EQ_SUBCMD(cmd, ":RECALL", ":KI0")) {

@@ -53,13 +53,10 @@
 
 #define TEMPERATURE_ADS1248_READY_FLAG	0x80
 
-#define TEMPERATURE_NUMBER_OF_ADC	2
-extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_ADC];
+#define TEMPERATURE_NUMBER_OF_SENSORS	1
+extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_SENSORS];
 #define TEMPERATURE_NUMBER_OF_ADS1248	2
 extern uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
-
-#define temperature_to_ADC_Pt1000_lookup_index(T)	(((T) + 8192) >> 10)
-#define temperature_ADC_Pt1000_to_temp_lookup_index(A)	(((A) + 512) >> 6)
 
 /* Values that represent the valid range and step size of the lookup table from temperature to ADC value */
 #define ADS1248_LOOKUP_TMIN				-6144					///< Lowest valid temperature for the lookup table temperature -> ADC
@@ -79,8 +76,6 @@ extern uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
 /* Macro that calculates the index in the lookup table nearest to the value given */
 #define temperature_ADS1248_to_temp_lookup_index(A)	(((A) - ADS1248_LOOKUP_ADCMIN) >> ADS1248_LOOKUP_ADCSTEP_LOG)
 
-int16_t temperature_to_ADC_Pt1000(int16_t temperature);	///< Function that converts temperature to ADC value using a lookup table and interpolation
-int16_t temperature_ADC_Pt1000_to_temp(int16_t A);	///< Function that converts ADC value to temperature using a lookup table and interpolation
 int16_t temperature_to_ADS1248(int16_t temperature);	///< Function that converts temperature to ADC value using a lookup table and interpolation
 int16_t temperature_ADS1248_to_temp(int16_t A);		///< Function that converts ADC value to temperature using a lookup table and interpolation
 

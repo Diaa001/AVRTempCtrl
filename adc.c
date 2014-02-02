@@ -10,10 +10,8 @@ void ADC_init(void)
 	ADMUX |= (1 << REFS0);
 	ADMUX &= ~(1 << REFS1);
 
-	/* Set ADC input to differential mode with inputs channel 0 (+)
-	   and channel 1 (-) and gain 10. This has to be set such that the
-	   ADC queue works. */
-	ADC_select_channel_diff_1_0_10x();
+	/* Set ADC input to channel 2 */
+	ADC_select_channel_2();
 
 	/* Left align the 10 bit ADC value in the 16 bit register */
 	ADMUX |= (1 << ADLAR);

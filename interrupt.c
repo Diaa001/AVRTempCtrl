@@ -41,10 +41,10 @@ ISR(USART0_RX_vect) {
 
 ISR(TIMER0_COMPB_vect)
 {
-	/* Increment the index of the ADC queue and set the start flag */
+	/* Switch to the next task */
 	_task = ((_task & 0x3f) < NUMBER_OF_TASKS - 1) ? (_task & 0x3f) + 1 : 0;
 
-	/* Activate the start flag. The routinge processing the task is responsible to turn off the flag. */
+	/* Activate the start flag. The routine processing the task is responsible to turn off the flag. */
 	_task |= TASK_START;
 }
 
