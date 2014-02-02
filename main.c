@@ -73,7 +73,8 @@ int main (void) {
 	/* Enable the rotary encoder */
 	encoder_init();
 
-	DDRD |= (1 << PD6);
+	/* Debug output to visualize the time each (scheduled) task requires */
+	DDRA |= (1 << PA7);
 
 	interrupts_on();
 
@@ -83,7 +84,7 @@ int main (void) {
 	while(1) {
 		/* Actions sorted by priority */
 		if (_task & 0xc0) {
-			PORTD |= (1 << PD6);
+			PORTB |= (1 << PA7);
 			/* Process scheduled tasks */
 			uint8_t task = _task & 0x3f;
 			if (task == TASK_ADC_TEMP_0 || task == TASK_ADC_HUM_0) {
@@ -141,7 +142,6 @@ int main (void) {
 			if (ADS1248_channel == 0)
 				temperature_ADC[1] = temperature_ADS1248_read_result(ADS1248_channel);
 		} else if (_ADC_result & (1 << ADC_CONVERSION_COMPLETE_BIT)) {
-			PORTD |= (1 << PD6);
 			/* Process completed ADC conversion */
 
 			/* Disable the conversion complete flag */
@@ -408,7 +408,7 @@ int main (void) {
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
 		}
-		PORTD &= ~(1 << PD6);
+		PORTB &= ~(1 << PA7);
 	} /* Main loop */
 
 	/* The program will never reach this point. */
