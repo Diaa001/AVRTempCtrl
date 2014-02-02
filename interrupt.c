@@ -100,13 +100,21 @@ ISR(PCINT2_vect)
 {
 	uint8_t pin = PINC;
 
-	if (pin & ADS1248_READY_0) {
+	/* Check whether the ready signal from the first ADS1248 has gone low */
+	if (!(pin & (1 << ADS1248_READY_0))) {
+		/* Disable the interrupt for this pin */
 		ADS1248_READY_0_PCMSK &= ~(1 << ADS1248_READY_0_PCINT);
+
+		/* Set the ready flag */
 		_temperature_ADS1248_ready[0] |= TEMPERATURE_ADS1248_READY_FLAG;
 	}
 
-	if (pin & ADS1248_READY_1) {
+	/* Check whether the ready signal from the second ADS1248 has gone low */
+	if (!(pin & (1 << ADS1248_READY_1))) {
+		/* Disable the interrupt for this pin */
 		ADS1248_READY_1_PCMSK &= ~(1 << ADS1248_READY_1_PCINT);
+
+		/* Set the ready flag */
 		_temperature_ADS1248_ready[1] |= TEMPERATURE_ADS1248_READY_FLAG;
 	}
 

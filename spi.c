@@ -33,6 +33,10 @@ void SPI_init(void)
 
 	/* Enable SPI */
 	SPCR |= (1 << SPE);
+
+	/* Deselect the slaves */
+	SPI_deselect(SPI_CS_ADS1248_0);
+	SPI_deselect(SPI_CS_ADS1248_1);
 }
 
 void SPI_select(uint8_t cs)
@@ -51,7 +55,8 @@ uint8_t SPI_send_receive(uint8_t data)
 	SPDR = data;
 
 	/* Wait for the transmission to finish */
-	while (SPSR & (1 << SPIF));
+	while (!(SPSR & (1 << SPIF)));
 
-	return SPDR;
+	uint8_t data_received = SPDR;
+	return data_received;
 }

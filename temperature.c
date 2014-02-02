@@ -239,25 +239,25 @@ void temperature_ADS1248_init(void)
 			SPI_select(SPI_CS_ADS1248_1);
 
 		/* Start programming registers, start with MUX0 */
-		SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
+		SPI_send(ADS1248_CMD_WREG | ADS1248_REG_MUX0);
 
 		/* Number of registers to program after MUX0 */
 		SPI_send(3);
 
 		/* Program register MUX0: BCS = off, inputs = AIN0, AIN1 */
-		SPI_send(0);
+		SPI_send((0x0 << 3) | (0x1 << 0));
 
 		/* Program register VBIAS: all bias off */
 		SPI_send(0);
 
 		/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
-		SPI_send(0);
+		SPI_send((0x1 << 5));
 
-		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier) to 8x, 40 samples per second */
-		SPI_send((0x3 << 4) | 0x3);
+		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier) to 16x, 40 samples per second */
+		SPI_send((0x4 << 4) | 0x3);
 
 		/* Program registers, continue with IDAC0 */
-		SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC0);
+		SPI_send(ADS1248_CMD_WREG | ADS1248_REG_IDAC0);
 
 		/* NUMBER of registers to program after IDAC0 */
 		SPI_send(1);
@@ -284,19 +284,19 @@ static void temperature_ADS1248_select_sensor(uint8_t channel)
 		SPI_select(SPI_CS_ADS1248_1);
 
 	/* Start programming registers, start with MUX0 */
-	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_MUX0);
+	SPI_send(ADS1248_CMD_WREG | ADS1248_REG_MUX0);
 
 	/* Number of registers to program after MUX0 */
-	SPI_send(1);
+	SPI_send(0);
 
 	/* Program register MUX0: BCS = off, inputs = AIN[2 * channel], AIN[2 * channel + 1] */
 	SPI_send(((channel & 0x3) << 4) | (((channel & 0x3) << 1) + 1));
 
 	/* Program registers, continue with IDAC1 */
-	SPI_send(ADS1248_CMD_WREG & ADS1248_REG_IDAC1);
+	SPI_send(ADS1248_CMD_WREG | ADS1248_REG_IDAC1);
 
 	/* NUMBER of registers to program after IDAC1 */
-	SPI_send(1);
+	SPI_send(0);
 
 	/* Program register IDAC1: Select AIN[2 * channel] and AIN[2 * channel + 1] as excitation current outputs */
 	SPI_send(((channel & 0x3) << 5) | (((channel & 0x3) << 1) + 1));

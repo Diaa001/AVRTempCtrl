@@ -17,10 +17,6 @@ void timer_8bit_cnt0_init(void)
 	TCCR0A &= ~(1 << COM0A0);
 	TCCR0A &= ~(1 << COM0A1);
 
-	/* Set OC0B at BOTTOM and clear at OCR0B match */
-	TCCR0A &= ~(1 << COM0B0);
-	TCCR0A |= (1 << COM0B1);
-
 	/* Select clock prescaler 1/1024 */
 	TCCR0B |= (1 << CS02) | (1 << CS00);
 	TCCR0B &= ~(1 << CS01);
