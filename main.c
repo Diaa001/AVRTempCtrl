@@ -84,7 +84,7 @@ int main (void) {
 	while(1) {
 		/* Actions sorted by priority */
 		if (_task & TASK_START) {
-			PORTB |= (1 << PA7);
+			PORTA |= (1 << PA7);
 			/* Process scheduled tasks */
 			uint8_t task = _task & 0x3f;
 			if (task == TASK_ADC_TEMP_0) {
@@ -385,7 +385,7 @@ int main (void) {
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
 		}
-		PORTB &= ~(1 << PA7);
+		PORTA &= ~(1 << PA7);
 	} /* Main loop */
 
 	/* The program will never reach this point. */
