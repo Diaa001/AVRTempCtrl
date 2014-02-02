@@ -101,7 +101,7 @@ int main (void) {
 
 				/* Determine the controller output (or if it it is off, at least update the values) */
 				int16_t controller_output;
-				controller_output = pid_Controller(PID_controller_setpoint_ADC, temperature_ADC[0] >> 6, &PID_controller_settings[active_PID]);
+				controller_output = pid_Controller(PID_controller_setpoint_ADC, temperature_ADC[0], &PID_controller_settings[active_PID]);
 
 				/* Set the controller output sign (heating/cooling) or set it to zero when it's off */
 				if (PID_controller_state == PID_CTRL_OFF)
@@ -124,7 +124,6 @@ int main (void) {
 				interrupts_suspend();
 				int16_t adc_val = (int16_t) temperature_ADC[0];
 				interrupts_resume();
-				adc_val /= 64;
 				int16_t temperature = temperature_ADS1248_to_temp(adc_val);
 
 				interrupts_suspend();
