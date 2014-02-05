@@ -59,20 +59,19 @@ extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_SENSORS];
 extern uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
 
 /* Values that represent the valid range and step size of the lookup table from temperature to ADC value */
-#define ADS1248_LOOKUP_TMIN				-6144					///< Lowest valid temperature for the lookup table temperature -> ADC
-#define ADS1248_LOOKUP_TMAX				+6144					///< Highest valid temperature for the lookup table temperature -> ADC
-#define ADS1248_LOOKUP_TSTEP_LOG			10					///< Log2 of the temperature step size in the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_TSTEP				(1 << ADS1248_LOOKUP_TSTEP_LOG)		///< Step size between temperatures in the lookup table ADC -> temperature
+#define ADS1248_LOOKUP_TMIN		-12288					///< Lowest valid temperature for the lookup table temperature -> ADC
+#define ADS1248_LOOKUP_TMAX		+12288					///< Highest valid temperature for the lookup table temperature -> ADC
+#define ADS1248_LOOKUP_TSTEP_LOG	10					///< Log2 of the temperature step size in the lookup table ADC -> temperature
+#define ADS1248_LOOKUP_TSTEP		(1 << ADS1248_LOOKUP_TSTEP_LOG)		///< Step size between temperatures in the lookup table ADC -> temperature
+
+/* Values that represent the valid range and step size of the lookup table ADC -> temperature */
+#define ADS1248_LOOKUP_ADCMIN		-32768					///< Lowest valid ADC value for the lookup table ADC -> temperature
+#define ADS1248_LOOKUP_ADCMAX		+32767					///< Highest valid ADC value for the lookup table ADC -> temperature
+#define ADS1248_LOOKUP_ADCSTEP_LOG	11					///< Log2 of the ADC values step size in the lookup table ADC -> temperature
+#define ADS1248_LOOKUP_ADCSTEP		(1 << ADS1248_LOOKUP_ADCSTEP_LOG)	///< Step size between ADC values in the lookup table ADC -> temperature
 
 /* Macro that calculates the index in the lookup table nearest to the value given */
 #define temperature_to_ADS1248_lookup_index(T)		(((T) - ADS1248_LOOKUP_TMIN) >> ADS1248_LOOKUP_TSTEP_LOG)
-
-/* Values that represent the valid range and step size of the lookup table ADC -> temperature */
-#define ADS1248_LOOKUP_ADCMIN				-32768					///< Lowest valid ADC value for the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCMAX				+32767					///< Highest valid ADC value for the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCSTEP_LOG			12					///< Log2 of the ADC values step size in the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCSTEP				(1 << ADS1248_LOOKUP_ADCSTEP_LOG)	///< Step size between ADC values in the lookup table ADC -> temperature
-
 /* Macro that calculates the index in the lookup table nearest to the value given */
 #define temperature_ADS1248_to_temp_lookup_index(A)	(((A) - ADS1248_LOOKUP_ADCMIN) >> ADS1248_LOOKUP_ADCSTEP_LOG)
 
