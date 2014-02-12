@@ -88,7 +88,7 @@ int main (void) {
 			/* Process scheduled tasks */
 			uint8_t task = _task & 0x3f;
 			if (task == TASK_ADC_TEMP_0) {
-				temperature_ADS1248_start_conversion(0);
+				temperature_ADS1248_start_conversion(3);
 			} else if (task == TASK_ADC_HUM_0) {
 				/* Start a conversion. ADC input was already selected after last conversion completed. */
 				ADC_start_conversion();
@@ -138,7 +138,7 @@ int main (void) {
 			/* Disable the task flags */
 			_task = task;
 		} else if ((ADS1248_channel = temperature_ADS1248_ready()) >= 0) {
-			if (ADS1248_channel == 0)
+			if (ADS1248_channel == 3)
 				temperature_ADC[0] = temperature_ADS1248_read_result(ADS1248_channel);
 		} else if (_ADC_result & (1 << ADC_CONVERSION_COMPLETE_BIT)) {
 			/* Disable the conversion complete flag */
