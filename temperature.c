@@ -206,8 +206,8 @@ void temperature_ADS1248_init(void)
 		/* Program register MUX1: internal reference always on, REF0 as reference, normal measurement */
 		SPI_send((0x1 << 5));
 
-		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier) to 16x, 40 samples per second */
-		SPI_send((0x4 << 4) | 0x3);
+		/* Program register SYS0: Set the gain of the PGA (programmable gain amplifier) to 8x, 40 samples per second */
+		SPI_send((0x3 << 4) | 0x3);
 
 		/* Program registers, continue with IDAC0 */
 		SPI_send(ADS1248_CMD_WREG | ADS1248_REG_IDAC0);
@@ -231,6 +231,8 @@ void temperature_ADS1248_init(void)
 
 static void temperature_ADS1248_select_sensor(uint8_t channel)
 {
+	SPI_set_sample_falling_edge();
+
 	if (channel < 4)
 		SPI_select(SPI_CS_ADS1248_0);
 	else
