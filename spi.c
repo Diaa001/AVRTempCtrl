@@ -37,6 +37,7 @@ void SPI_init(void)
 	/* Deselect the slaves */
 	SPI_deselect(SPI_CS_ADS1248_0);
 	SPI_deselect(SPI_CS_ADS1248_1);
+	SPI_deselect(SPI_CS_MAX7221);
 }
 
 void SPI_select(uint8_t cs)
@@ -59,4 +60,14 @@ uint8_t SPI_send_receive(uint8_t data)
 
 	uint8_t data_received = SPDR;
 	return data_received;
+}
+
+void SPI_set_sample_rising_edge(void)
+{
+	SPCR &= ~(1 << CPHA);
+}
+
+void SPI_set_sample_falling_edge(void)
+{
+	SPCR |= (1 << CPHA);
 }
