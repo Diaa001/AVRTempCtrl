@@ -37,6 +37,12 @@ int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
 	clock_set_prescale_2();
 
+	/* Turn on power to the humidity sensor */
+	DDRB |= (1 << PB2);
+	PORTB &= ~(1 << PB2);
+	DDRA |= (1 << PA6);
+	PORTA |= (1 << PA6);
+
 	USART_init();
 	timer_8bit_cnt0_init();
 	timer_16bit_cnt1_init();
@@ -74,7 +80,7 @@ int main (void) {
 	encoder_init();
 
 	/* Debug output to visualize the time each (scheduled) task requires */
-	DDRA |= (1 << PA7);
+	DDRA |= (1 << PA0);
 
 	interrupts_on();
 
@@ -84,7 +90,7 @@ int main (void) {
 	while(1) {
 		/* Actions sorted by priority */
 		if (_task & TASK_START) {
-			PORTA |= (1 << PA7);
+			PORTA |= (1 << PA0);
 			/* Process scheduled tasks */
 			uint8_t task = _task & 0x3f;
 			if (task == TASK_ADC_TEMP_0) {
@@ -154,7 +160,7 @@ int main (void) {
 				humidity_ADC[0] = result;
 
 				/* Next measurement is humidity sensor 0 (again) */
-				// ADC_select_channel_2();
+				// ADC_select_channel_7();
 			}
 		} else if (_encoder_increment) {
 			/* _encoder_increment could change at this point through an interrupt */
@@ -384,7 +390,7 @@ int main (void) {
 			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
 			rx_complete = 0;
 		}
-		PORTA &= ~(1 << PA7);
+		PORTA &= ~(1 << PA0);
 	} /* Main loop */
 
 	/* The program will never reach this point. */

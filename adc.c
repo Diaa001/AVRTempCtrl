@@ -10,8 +10,8 @@ void ADC_init(void)
 	ADMUX |= (1 << REFS0);
 	ADMUX &= ~(1 << REFS1);
 
-	/* Set ADC input to channel 2 */
-	ADC_select_channel_2();
+	/* Set ADC input to channel 7 */
+	ADC_select_channel_7();
 
 	/* Left align the 10 bit ADC value in the 16 bit register */
 	ADMUX |= (1 << ADLAR);

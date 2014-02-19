@@ -13,6 +13,11 @@ extern volatile uint16_t _ADC_result;		///< Result of the latest ADC measurement
 	ADMUX |= (1 << MUX1);\
 }
 
+#define ADC_select_channel_7() {\
+	ADMUX &= ~(0x1f);\
+	ADMUX |= (1 << MUX0) | (1 << MUX1) | (1 << MUX2);\
+}
+
 #define ADC_select_channel_diff_1_0_10x() {\
 	ADMUX &= ~(0x1f);\
 	ADMUX |= (1 << MUX3);\
