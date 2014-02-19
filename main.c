@@ -33,6 +33,25 @@ uint8_t PID_controller_state = PID_CTRL_OFF;	///< Controller mode: PID_CTRL_OFF,
 int16_t PID_controller_setpoint_T;		///< Setpoint of the PID controller in degrees Celsius (times 100)
 int16_t PID_controller_setpoint_ADC;		///< Setpoint of the PID controller in ADC units
 
+uint8_t alarm_state;				///< Alarm state. Zero if no alarm, non-zero when an alarm occurs. An alarm must be acknowledged by the user.
+
+/**
+	Checks whether an alarm situation exists by reading sensors and interlock states
+	\return 1 if an alarm situation exists, 0 otherwise
+ */
+uint8_t check_alarm(void)
+{
+	/* Read sensor values */
+	uint16_t adc_val = humidity_ADC[0];
+	adc_val >>= 6;
+	uint8_t humidity = honeywell_convert_ADC_to_RH(adc_val);
+
+	uint8_t water_interlock_open = (PIND & (1 << PD2));
+
+	/* Check values against limits */
+	return humidity > 60 || water_interlock_open;
+}
+
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
 	clock_set_prescale_2();
@@ -79,6 +98,10 @@ int main (void) {
 	/* Enable the rotary encoder */
 	encoder_init();
 
+	/* Set the water interlock pin as input with pullup resistor */
+	DDRD &= ~(1 << PD2);
+	PORTD |= (1 << PD2);
+
 	/* Debug output to visualize the time each (scheduled) task requires */
 	DDRA |= (1 << PA0);
 
@@ -124,8 +147,12 @@ int main (void) {
 				else if (controller_output > 0)
 					pwm = ((uint16_t) controller_output) + 1;
 
-				/* Set the pulse width modulation (PWM) output */
-				OCR1B = pwm;
+				/* The alarm automatically turns off the PID controller, however ensure zero PWM output here anyway */
+				if (!alarm_state)
+					/* Set the pulse width modulation (PWM) output */
+					OCR1B = pwm;
+				else
+					OCR1B = 0;
 			} else if (task == TASK_DISPLAY) {
 				interrupts_suspend();
 				int16_t adc_val = (int16_t) temperature_ADC[0];
@@ -140,6 +167,19 @@ int main (void) {
 
 				display_temperature(temperature);
 				display_humidity(humidity);
+			} else if (task == TASK_ALARM) {
+				/* Only execute alarm checking when the controller is on */
+				if (PID_controller_state != PID_CTRL_OFF && check_alarm()) {
+					/* Turn the alarm on and stop the PID controller */
+					alarm_state = 1;
+					PID_controller_state = PID_CTRL_OFF;
+
+					/* Turn off the PWM signal, i.e. turn of cooling / heating power */
+					OCR1B = 0;
+
+					/* Indicate the alarm with the ERROR LED */
+					LED_set(LED_ERROR, LED_ON);
+				}
 			}
 			/* Disable the task flags */
 			_task = task;
@@ -193,6 +233,7 @@ int main (void) {
 		} else if (rx_complete) {
 			char * cmd = (char *) rx_buffer[rx_buffer_sel];
 			if (EQ_CMD(cmd, ":SET")) {
+				uint8_t alarm_error = 0;
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
 					int16_t temperature;
 					if (temperature_string_to_temp(SUBSTR(cmd, ":SET:SETPOINT "), &temperature)) {
@@ -225,14 +266,28 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KD1")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD1 "));
 					PID_controller_settings[1].D_Factor = factor;
-				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE")) {
-					if (EQ_SUBCMD(cmd, ":SET:STATE ", "OFF")) {
+				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE:CTRL")) {
+					if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "OFF")) {
 						PID_controller_state = PID_CTRL_OFF;
 						LED_set(LED_ACTIVE, LED_OFF);
-					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "COOL")) {
+					} else if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "COOL")) {
+						/* Do not allow cooling in alarm state */
+						if (alarm_state || check_alarm()) {
+							alarm_state = 1;
+							alarm_error = 1;
+						}
+
+						/* Turn on cooling */
 						PID_controller_state = PID_CTRL_COOLING;
 						LED_set(LED_ACTIVE, LED_ON);
-					} else if (EQ_SUBCMD(cmd, ":SET:STATE ", "HEAT")) {
+					} else if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "HEAT")) {
+						/* Do not allow heating in alarm state */
+						if (alarm_state || check_alarm()) {
+							alarm_state = 1;
+							alarm_error = 1;
+						}
+
+						/* Turn on heating */
 						PID_controller_state = PID_CTRL_HEATING;
 						LED_set(LED_ACTIVE, LED_ON);
 					} else {
@@ -243,7 +298,10 @@ int main (void) {
 				} else {
 					goto CMD_ERROR;
 				}
-				USART_send_bytes((const uint8_t *) "OK\n", 3);
+				if (!alarm_error)
+					USART_send_bytes((const uint8_t *) "OK\n", 3);
+				else
+					USART_send_bytes((const uint8_t *) "ERROR: ALARM STATE\n", 19);
 			} else if (EQ_CMD(cmd, ":GET")) {
 				if (EQ_SUBCMD(cmd, ":GET", ":SETPOINT")) {
 					/* Convert the temperature to a string */
@@ -296,12 +354,35 @@ int main (void) {
 					adc_val2 >>= 6;
 					sprintf((char *) tx_buffer, "%i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
 				} else if (EQ_SUBCMD(cmd, ":GET", ":STATE")) {
-					if (PID_controller_state == PID_CTRL_OFF)
-						strcpy((char *) tx_buffer, "OFF\n");
-					else if (PID_controller_state == PID_CTRL_COOLING)
-						strcpy((char *) tx_buffer, "COOL\n");
-					else if (PID_controller_state == PID_CTRL_HEATING)
-						strcpy((char *) tx_buffer, "HEAT\n");
+					if (EQ_SUBCMD(cmd, ":GET:STATE", ":CTRL")) {
+						/* Check alarm state */
+						if (alarm_state)
+							strcpy((char *) tx_buffer, "ALARM\n");
+						else if (PID_controller_state == PID_CTRL_OFF)
+							strcpy((char *) tx_buffer, "OFF\n");
+						else if (PID_controller_state == PID_CTRL_COOLING)
+							strcpy((char *) tx_buffer, "COOL\n");
+						else if (PID_controller_state == PID_CTRL_HEATING)
+							strcpy((char *) tx_buffer, "HEAT\n");
+					} else if (EQ_SUBCMD(cmd, ":GET:STATE", ":INTERLOCK")) {
+							/* Get the state of the water interlock */
+							if (check_alarm()) {
+								strcpy((char *) tx_buffer, "UNSAFE\n");
+							} else {
+								strcpy((char *) tx_buffer, "SAFE\n");
+							}
+					} else if (EQ_SUBCMD(cmd, ":GET:STATE", ":ALARM")) {
+							if (alarm_state) {
+								strcpy((char *) tx_buffer, "ON\n");
+							} else {
+								strcpy((char *) tx_buffer, "OFF\n");
+							}
+					}
+				} else if (EQ_SUBCMD(cmd, ":GET", ":STEADY")) {
+					if (alarm_state)
+						strcpy((char *) tx_buffer, "ALARM\n");
+					else
+						strcpy((char *) tx_buffer, "NO\n");
 				} else {
 					goto CMD_ERROR;
 				}
@@ -313,6 +394,9 @@ int main (void) {
 					PID_controller_settings[0].sumError = 0;
 				} else if (EQ_SUBCMD(cmd, ":RESET", ":INTEGRAL1")) {
 					PID_controller_settings[1].sumError = 0;
+				} else if (EQ_SUBCMD(cmd, ":RESET", ":ALARM")) {
+					alarm_state = 0;
+					LED_set(LED_ERROR, LED_OFF);
 				} else {
 					goto CMD_ERROR;
 				}
