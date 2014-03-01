@@ -1,0 +1,266 @@
+/**
+
+\page MaintDoc Maintainer documentation
+\brief Documentation relevant for maintaining the temperature controlled setup
+\tableofcontents
+
+\section MaintDoc_Intro Introduction
+AVRTempCtrl is part of a larger physical setup.
+It fits in there through a number of interfaces.
+Apart from the interface to the rest of the setup there are also user interfaces relevant for the setup maintainer.
+
+It is necessary to read the \ref UserDoc "user documentation" to understand this document.
+
+\section MaintDoc_PhysSetup Physical setup
+The physical setup consists of a volume that requires temperature control.
+This is achieved by controlling the flux of heat to the system.
+The devices used to pump heat in and out of the volume are peltier elements which are attached with one side to the boundary of the volume.
+On the other side of the (flat) peltier elements a heat exchanger is placed which maintains a relatively constant temperature
+by having coolant water flowing through it.
+The amount of heat conducted by the peltier elements depends on the electrical current flowing though them, as well as the temperature difference between both sides of the elements.
+It is the current that flows through the peltier elements that is controlled by AVRTempCtrl.
+This is achieved by attaching a high current power supply (15 V DC) to the peltier elements through a system of electronically controlled switches.
+The effective current is controlled by turning on and off the current periodically with a variable duty cycle
+such that the average current equals the duty cycle times the maximum current.
+
+### Controlled volume ###################
+The controlled volume is a box with rectangular aluminium plate as the lower side and thermally insulated aluminium sides as walls.
+On top the volume is closed by an aluminium lid which has seals to ensure some air tightness.
+The temperature is controlled through heat flow through the lower aluminium plate.
+The other sides of the box are partially insulated to avoid parasitical heat flow through these.
+
+### Peltier elements ###################
+There are 6 peltier elements (type C2-50-1514 from Tellurex) in the setup.
+They each require 14.8 V for optimal performance which is a trade-off between the amount of heat pumped and the amount of heat generated through electrical power dissipation.
+At this voltage they consume about 14 A of current which is provided by 2 power supplies, each capable of 15 V and 40 A.
+This means a total of 1200 W in electrical power dissipation.
+The maximum thermal flux through the peltier elements is 135 W each.
+This results in a total power of approximately 2000 W.
+This has to be transported away from the peltier elements, otherwise they will melt.
+
+### Heat exchanger ###################
+The heat exchanger is intended to transport the 2000 W of power that the peltier elements pump and generate away using water cooling.
+It is a block of copper and aluminium as a sandwich in a cold-plate arrangement.
+The block is designed such that there two water inlets and two water outlets.
+The water flows such that there is thermal gradient through water that is warming up as it passes.
+This is achieved by having water running in opposite directions.
+The copper block withstands up to 8 bars of pressure which is the maximum pressure of the water cooling installation of the laboratory.
+However, there is some flexing of the upper surface of the block under pressure.
+It amounts to a few hundred micro meters which decrease the thermal contact to the peltier elements.
+The water connections to the block are special connectors which are sealing on both sides, the hose and the block side.
+This means that the water can be disconnected without spilling water.
+One must keep in mind that through this pressure may remain inside the block.
+It is also advised not to remove the water connections while the water is running / moving.
+
+### Water supply ###################
+The cooling water from the laboratory installation has a maximum pressure of about 8 bars and has a temperature of 18-19 degrees Celsius.
+It is desalinated and very clean.
+Hoses connect the outlets on the ceiling to a valve at the wall.
+Actually there are two valves, one for turning on and off, and one to adjust the amount of water flow.
+The latter can only be adjusted with a wrench.
+
+### Power supply for the peltier elements ###################
+There are two 15 V power supplies that are capable of 40 A each which are intended to supply the peltier elements.
+Their output voltage is adjustable using a dial on the front of the device.
+Three peltier elements are driven by each of the power supplies.
+
+### Power cables for the peltier elements ###################
+Every peltier element has its own pair of power cables.
+This means that 3 cables from each of the 2 power supplies carry the current to the peltier elements and 3 cables carry it back to each supply.
+The current that flows in these cables is quite significant and connections have to be safe for this current.
+The total current from each power supply is approximately 40 A, thus each wire carries a bit more than 13 A.
+With this amount of current even small resistances will cause a significant voltage drop that reduces the voltage applied to the peltier elements.
+The cables themselves will become warm during operation but it is the connections that one should worry about.
+
+### Power switches ###################
+The variation of current through the peltier elements is done through MOSFET switches and pulse width modulation (PWM).
+In order to be able to drive the peltier elements in both directions (cooling and heating) 4 MOSFETs are used for each power supply in a H-bridge circuit.
+For each mode (cooling or heating) 2 out of the 4 MOSFETs are turned on, one before and one after the load.
+In the opposite mode the other 2 MOSFETs are used, again before and after the load.
+Care has to be taken that cooling and heating mode are not enabled at the same time as this would cause a short circuit.
+Because N-channel MOSFETs (NMOS) are used on the positive side of the load their gate voltage must be higher than the voltage applied to the load.
+The reason for using N-channel MOSFETs is the lower on-resistance.
+The MOSFETs in use are specially selected such that
+- they have a very low on-resistance
+- they withstand currents exceeding 40 A
+- the applied gate voltage required to achieve the low on-resistance and the high current is small
+- they do not have excessive input capacitance
+
+A PCB is used to for the H-bridge circuit.
+There are two logic input signals to this board:
+- pulse width modulation (PWM) input (5 V logic)
+- cooling / heating mode signal (5 V logic, low: cooling, high: heating)
+
+In order to drive the correct MOSFETs at the right time there is some logic on the board.
+This logic ensures also that it is impossible that both branches of the H-bridge are turned on simultaneously which would result in a short circuit.
+Additionally level conversion is applied such that the gate voltages are appropriate for each MOSFET.
+This means:
+- 12 V Gate voltage for the MOSFETs on the negative side
+- 24 V Gate voltage for the MOSFETs on the positive side
+
+To achieve the high voltages a 24 V power supply is required for the board.
+Because the gate of a MOSFET cannot withstand voltages larger than 20 V (with respect to the source voltage) there are zener diodes to enforce the
+gate-source voltage to be within 12 V.
+
+### AVRTempCtrl temperature controller ###################
+The temperature controller uses a temperature sensor to measure the temperature in the controlled system.
+This information is used to determine the amount of current (and the polarity) that flows through the peltier elements.
+It is not only the current temperature that is used for the computation, but also the past error in form of an integral, as well as a prediction
+of the future error by differentiating.
+This type of control is called PID control (PID: Proportional-Integral-Derivative).
+The output of the controller is a pulse width modulation (PWM) signal as well as a cooling / heating logic signal.
+These two signals are fed through the power switch driver and then to the power MOSFETs that form the H-bridges used to control the peltier current.
+
+### Temperature sensors ###################
+One temperature sensor is used for the temperature control.
+However, it is possible to connect up to 8 such sensors to AVRTempCtrl.
+The sensors are of type Pt1000, a resistance temperature detector (RTD) on platinum basis.
+They are very precise over a very large range of temperature, from -200 up to 650 degrees Celsius, being very linear.
+They are used in a 3-wire resistance measurement in order to compensate for the resistance of the measurement wires.
+
+### Humidity sensors ###################
+There is a Honeywell HIH-4000-001 humidity sensor in the setup that is held at the same temperature as the temperature sensor that is used for control.
+The humidity sensor is not only used for information but also as a safety interlock.
+It must be avoided that devices measured in the controlled volume are exposed to water condensation.
+
+\section MaintDoc_PCB AVRTempCtrl PCB interfaces
+### Power connection ###################
+Power is applied to the PCB through a DC connector with an outer diameter of 5.5 mm and a pin diameter of 2.1 (2.5?) mm.
+The required voltage is 6 to 9 V.
+There is a zener diode across the input contacts ensures that the voltage does not exceed 15 V and will short circuit the supply when the polarity is reversed.
+In both cases the zener diode may be destroyed.
+To recover, the zener diode must be replaced.
+
+\warning There is a bug on the AVRTempCtrl v1.0 PCB: the ground connection of the zener diode is missing.
+This is fixed by a manually soldered wire.
+
+### Sensor connections ###################
+There are two 25 pin D-SUB connectors on the PCB which are used for sensors.
+A double-row of 2.54 mm pitch connectors allow access to the wires without going through the D-SUB connector.
+The first 12 pins of each D-SUB connector are used for 3-wire temperature sensor connections.
+
+Pin assignment for sensor connector 1:
+Pin        | 1      | 2      | 3      | 4      | 5      | 6      | 7      | 8      | 9      | 10     | 11     | 12
+---------- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------
+Assignment | RTD 1A | RTD 1B | RTD 1B | RTD 2A | RTD 2B | RTD 2B | RTD 3A | RTD 3B | RTD 3B | RTD 4A | RTD 4B | RTD 4B
+
+and
+
+Pin        | 13     | 14     | 15     | 16     | 17     | 18     | 19     | 20     | 21     | 22     | 23     | 24     | 25
+---------- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------
+Assignment | ADC 0  | ADC 1  | ADC 2  | ADC 3  | ADC 4  | ADC 5  | ADC 6  | ADC 7  | AIN 0  | AIN 1  | Ground | Ground | 5 V
+
+Pin assignment for sensor connector 2:
+Pin        | 1      | 2      | 3      | 4      | 5      | 6      | 7      | 8      | 9      | 10     | 11     | 12
+---------- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------
+Assignment | RTD 5A | RTD 5B | RTD 5B | RTD 6A | RTD 6B | RTD 6B | RTD 7A | RTD 7B | RTD 7B | RTD 8A | RTD 8B | RTD 8B
+
+and
+
+Pin        | 13     | 14     | 15     | 16     | 17     | 18      | 19       | 20       | 21       | 22        | 23       | 24       | 25
+---------- | ------ | ------ | ------ | ------ | ------ | ------- | -------- | -------- | -------- | --------- | -------- | -------- | ------
+Assignment | 5 V    | 5 V    | Ground | Ground | Ground | SPI CLK | SPI MISO | SPI MOSI | LED CTRL | LED Alarm | Button 1 | Button 2 | Button 3
+
+Temperature sensors (Pt1000) require a 3-wire connection, the single wire on the one end of the sensor goes into the RTD nA pin, the two wires
+on the other end of the sensor go into the respective RTD nB pins.
+
+The humidity sensor requires a 5 V and a ground connection (pin 25 and pin 24 of sensor connector 1).
+The output has to be connected to ADC 0 (pin 13 of sensor connector 1).
+
+In order to use the other sensor connector pins one should have the expertise of a developer.
+See the \ref DevelDoc "developer documentation" for more information.
+
+### Pulse width modulation (PWM) output ###################
+The PWM output of the microcontroller is directly connected to the 2.54 mm pitch header with the label \a PWM.
+It is a 5 V logic signal with the ground pin being closer to the PCB edge.
+
+### Cooling / heating output ###################
+The cooling / heating output signal is also at the 2.54 pitch header labeled \a PWM.
+Low signal (0 V) stands for cooling, high signal (5 V) for heating.
+Again, the ground pin is the one closer to the PCB edge.
+
+### USB connection ###################
+The USB connection serves as a serial interface to the temperature controller.
+A standard USB cable can be used to connect to the computer.
+It is advisable to have a USB hub between computer and AVRTempCtrl board as a fault on the board may cause the burning out of the USB port (or even the main board) on the computer.
+
+### 7-segment display connection ###################
+The 7-segment (actually 8 segment) display header connects to 8 common-cathode LED 7(8)-segment digits.
+8 of the connections are going to each of the cathodes of the digits.
+The other 8 connections go to each of the anodes of each of the digits.
+
+### Button connections ###################
+3 Buttons of type SPST can be attached to the pin header labeled \a buttons.
+They can be attached either way.
+
+### LED connections ###################
+5 LEDs can be attached to the pin header labeled \a LEDs.
+They will be driven with 5 V and a 150 Ohm series resistor.
+
+### ISP connector ###################
+Unless you are trying to reprogram the firmware do not use the ISP header.
+If you are, see the \ref DevelDoc "developer documentation".
+
+\section MaintDoc_Ctrl AVRTempCtrl temperature controller
+The temperature controller uses the measurement data from temperature sensor 0 (connected to RTD 1A and RTD 1B in a three wire connection) to
+determine the heat flow through the peltier elements by controlling the current flowing through them using pulse width modulation (PWM).
+The controller calculates the temperature error which is the difference between set point and temperature sensor feedback and tries to adjust it to zero.
+In order to achieve this the controller not only uses the momentary measurement value of the the temperature sensor, but also the past error by integration and the prediction of the future error by differentiation.
+
+### Set point ###################
+The temperature controller has a set point (target temperature) that can be saved in the EEPROM of the microcontroller.
+The EEPROM retains its memory state even when power is lost.
+Once saved this set point value will be used initially when AVRTempCtrl starts up after power loss.
+
+\warning This parameter should not be changed by normal users!
+
+### Controller parameters ###################
+The control output is the sum of the proportional (momentary) error, integral of the error, and the derivative of the error.
+Each of these terms is multiplied with a constant before building the sum.
+These constants are called \c Kp, \c Ki, and \c Kd (p, i, and d stand for proportional, integral, derivative).
+The physical system determines the optimal values of these constants.
+Therefore they have to be adapted to the setup.
+Since they are always the same after the setup is fixed they should remain in permanent storage.
+For this reason these values are stored in the EEPROM.
+Because cooling and heating require different control there are two sets of constants, a total of 6 constants.
+
+The controller parameters are multiplied to the proportional, integral, and derivative terms.
+However, these terms are not expressed in degrees Celsius internally, but in ADC units.
+Additionally, the integral term is divided by 32 and therefore the integral constant has to be larger by this amount to compensate.
+
+\warning These parameters should not be changed by normal users!
+
+### Parameter tuning ###################
+missing
+
+### Serial interface ###################
+There are serial commands that can be used to set controller parameters:
+
+Command                     | Description
+--------------------------- | -------------------------------------------------------------------------
+<tt> :SAVE:SETPOINT   </tt> | Saves the current set point to the EEPROM
+<tt> :RECALL:SETPOINT </tt> | Loads the saved set point from the EEPROM
+<tt> :SET:KP0         </tt> | Sets the constant for the proportional term for the PID controller used for cooling
+<tt> :SET:KI0         </tt> | Sets the constant for the integral term for the PID controller used for cooling
+<tt> :SET:KD0         </tt> | Sets the constant for the derivative term for the PID controller used for cooling
+<tt> :SET:KP1         </tt> | Sets the constant for the proportional term for the PID controller used for heating
+<tt> :SET:KI1         </tt> | Sets the constant for the integral term for the PID controller used for heating
+<tt> :SET:KD1         </tt> | Sets the constant for the derivative term for the PID controller used for heating
+<tt> :SAVE:KP0        </tt> | Saves the constant for the proportional term for the PID controller used for cooling to the EEPROM
+<tt> :SAVE:KI0        </tt> | Saves the constant for the integral term for the PID controller used for cooling to the EEPROM
+<tt> :SAVE:KD0        </tt> | Saves the constant for the derivative term for the PID controller used for cooling to the EEPROM
+<tt> :SAVE:KP1        </tt> | Saves the constant for the proportional term for the PID controller used for heating to the EEPROM
+<tt> :SAVE:KI1        </tt> | Saves the constant for the integral term for the PID controller used for heating to the EEPROM
+<tt> :SAVE:KD1        </tt> | Saves the constant for the derivative term for the PID controller used for heating to the EEPROM
+<tt> :RECALL:KP0      </tt> | Loads the constant for the proportional term for the PID controller used for cooling from the EEPROM
+<tt> :RECALL:KI0      </tt> | Loads the constant for the integral term for the PID controller used for cooling from the EEPROM
+<tt> :RECALL:KD0      </tt> | Loads the constant for the derivative term for the PID controller used for cooling from the EEPROM
+<tt> :RECALL:KP1      </tt> | Loads the constant for the proportional term for the PID controller used for heating from the EEPROM
+<tt> :RECALL:KI1      </tt> | Loads the constant for the integral term for the PID controller used for heating from the EEPROM
+<tt> :RECALL:KD1      </tt> | Loads the constant for the derivative term for the PID controller used for heating from the EEPROM
+<tt> :SAVE:ALL        </tt> | Saves all current parameters to the EEPROM
+<tt> :RECALL:ALL      </tt> | Loads all the saved parameters from the EEPROM
+
+\warning These commands should not be used by normal users!
+
+*/

@@ -1,0 +1,408 @@
+/**
+
+\page DevelDoc Developer documentation
+\brief Documentation relevant for developing and changing the firmware for the temperature controlled setup
+\tableofcontents
+
+\section DevelDoc_Introduction Introduction
+The behaviour of the AVRTempCtrl temperature controller is largely determined by the firmware which is a program written in C
+that runs on the microcontroller of the AVRTempCtrl v1.0 board.
+Its main purpose is to provide temperature control, safety interlocks, and user interfaces.
+The firmware interacts with the physical world by using the electrical circuits of the microcontroller which are connected to the outside
+which includes peripheral devices.
+Knowledge of these peripherals is therefore essential to firmware development.
+
+It is necessary to read the \ref UserDoc "user documentation" as well as the \ref MaintDoc "maintainer documentation" to understand this document.
+
+\section DevelDoc_Hardware Hardware
+In this section the relevant hardware that interacts with the firmware is explained.
+
+## Microcontroller
+The Atmel ATmega644_PA microcontroller is a 8 bit CPU with an AVR instruction set and a Harvard architecture.
+It has 64 KB of Flash program memory, 4 KB of SRAM, and 2 KB of EEPROM memory.
+The Flash memory is used to store the instructions, i.e. the compiled program.
+It will remain there even when power is lost.
+The SRAM is used for program data (variables, arrays) as well as the program stack.
+It will lose its data upon power loss.
+EEPROM is mainly used for saving data that should be retained during power absence.
+Reading and writing data to it is rather slow.
+
+The program on the microcontroller is not executed on an operating system such as with a computer.
+It is the only thing running and does not rely on system calls or such.
+Also it should never return (exit), otherwise the microcontroller stands still.
+The flow of the program is continuous except for hardware interrupts that can be enabled.
+If such an interrupt occurs a special function called interrupt handler is called.
+Once this function finished it returns to where the main program left off.
+There is a different interrupt handler for every type of interrupt.
+
+The microcontroller has a large set of internal peripherals which are accessed in the program through special registers.
+These registers control whether the peripheral is enabled or not, set parameters, provide data in- and output, or control interrupts.
+The peripherals used in the firmware are explained below.
+
+### I/O ports ###########################
+There are 4 I/O ports on the microcontroller.
+These consist of 8 pins each that can serve either as inputs or outputs.
+The data direction can be programmed.
+Most of these pins can take on another role and are then used for something else.
+They are represented in the program as 8 bit registers.
+Whenever one writes a byte into such a register the state of the output pins change accordingly (if the pins are configured as outputs).
+When one performs a read on a register the current logic state on the pins is returned (if the pins are configured as inputs).
+Additionally, a pull-up resistor can be activated for input pins.
+
+### Timer / Counter #####################
+There are three timers / counters in the microcontroller.
+When enabled, they count up at each clock cycle.
+They operate independently from the execution of program instructions and are therefore real-time.
+When the maximum integer value is reached they restart at zero or count down again depending on configuration.
+Two of the counters are 8 bit and one is 16 bit.
+They have two output compare registers each which can be used for many things:
+- they can cause an interrupt when the counter equals the compare register value
+- they can cause a microcontroller pin to oscillate in different ways (e.g. pulse width modulation)
+
+Additionally, the overflow of the counter can cause an interrupt.
+
+### SPI serial interface ################
+SPI is a serial interface that can be used to communicate with other microchips.
+It is based on a bus with three lines: one for a clock and the other two for data input and data output.
+An additional chip select line is used for each peripheral chip and chips listen to the bus only when they are selected.
+There are 4 different modes of operation and care has to be taken that the correct mode is used when communicating with a particular chip.
+
+### USART serial interface ##############
+The USART interface can be used for communication with computers with a RS-232 like data format.
+It is byte driven and can be used in a similar way as the SPI interface.
+
+### ADC #################################
+There is an 10 bit analog to digital converter (ADC) with 8 channels on the microcontroller.
+Analog signals can be measured with it, but only one at a time.
+
+## External ADC
+There are 2 ADS1248 ADC (analog to digital converters) on the PCB that together offer 8 3-wire Pt1000 sensor inputs.
+The circuit is compensated at 1000 Ohm (0 degrees Celsius) with 2000 Ohm between the reference terminals.
+The resistors used are precision resistors with an error of only 0.05 %.
+This means that the ADC output is zero, when the temperature is 0 degrees Celsius.
+
+The ADCs have a 24 bit resolution with about 19-20 noise-free bits.
+For this application 16 bits is more than enough.
+The ADCs have a start and ready signal each as well as an SPI communication interface with the microcontroller.
+The signal pins are:
+Signal              | Port (ADC 1)  | Port (ADC 2)
+------------------- | ------------- | -------------
+Start conversion    | PB4           | PC1
+Conversion complete | PC0           | PC2
+SPI chip select     | PD5           | PD6
+
+## 7-segment display controller
+The MAX7221 7-segment controller is used for the 5 digit temperature display and the 3 digit humidity display.
+This is the maximum number of digits it can handle.
+The controller chip communicates through SPI with the microcontroller, but only unidirectional.
+Signal              | Port
+------------------- | -------------
+SPI chip select     | PD7
+
+## USB module
+The DLP-USB232M-G USB module acts as an USB to serial interface.
+The serial lines (RX and TX) are directly connected to the respective pins of the microcontroller.
+
+On the (Linux) computer side the device appears as a teletype (tty) device, usually with the name <tt>/dev/ttyUSB\<n\></tt>.
+This file can be opened like any other serial device, but baud rate, stop bits, parity bits, etc. must be the same as configured in the microcontroller.
+Bytes can then written to the device or they can be read if it answers.
+
+On the microcontroller side the bytes can be read and written with the USART peripheral.
+Incoming bytes can cause an interrupt which is often necessary as the bytes get overwritten if they are not read before the next one arrives.
+Writing bytes requires waiting until the writing buffer is empty which can also be interrupt driven.
+Signal              | Port
+------------------- | -------------
+RX (receiving)      | RXD0 (PD0)
+TX (transmitting)   | TXD0 (PD1)
+
+## Control output
+The control output which should provide the pulse width modulation (PWM) output as well as the cooling / heating signal to the peltier element power circuit.
+The PWM output is directly connected to the output compare register B of the 16 bit counter.
+The cooling / heating signal can be set through I/O port D, pin 3.
+Signal              | Port
+------------------- | -------------
+PWM                 | OC1B (PD4)
+Cooling / heating   | PD3
+
+## Buttons
+There are 3 buttons that can be attached to the microcontroller as a user interface.
+They are hardware debounced such that reading of the button state is guaranteed to be correct.
+Logic state 0 indicates a button with open contacts, state 1 indicates closed contacts.
+The buttons are attached to these ports:
+Button  | Port
+------- | -------
+1       | PC5
+2       | PC6
+3       | PC7
+
+## Encoder
+An rotary encoder can be attached to the microcontroller as a user interface.
+Its outputs are connected to
+Signal  | Port
+------- | ---------
+A       | PB0
+B       | PB1
+
+## LEDs
+There is a total of 5 LEDs, three of which are driven automatically (in hardware) by the PWM and the cooling / heating outputs.
+The other two leds can be used freely.
+They are attached to
+LED     | Port
+------- | -------
+1       | PC3
+2       | PC4
+
+## Interlock
+A water interlock can be connected that should behave like a switch:
+It either is an open circuit or a shortcut.
+The microcontroller input for this switch is not debounced.
+Signal      | Port
+----------- | ---------
+Interlock   | PD2
+
+\section DevelDoc_Firmware Firmware
+## Overview
+The firmware is the program that runs on the microcontroller.
+It has to do the following things:
+- temperature control
+- safety interlocks
+- user interfaces
+
+There are multiple ways to implement this.
+The chosen way was to have a main routine that consists of an infinite loop that processes tasks one after another.
+Tasks are assigned by interrupt handlers.
+This means that if no interrupts occur, no tasks will ever be processed.
+There are two basic types of interrupts:
+- scheduled interrupts
+- non-scheduled interrupts
+
+### Scheduled interrupts
+The timer 0 is used to generate scheduled interrupts at precise intervals.
+It is configured in such a way that it overflows 16 times per second.
+Each time it overflows an interrupt is generated which causes the interrupt handling routine to be processed.
+This interrupt handling routing could be called a \a scheduler.
+All this scheduler does is switch between 16 different tasks by setting the current task number and setting a START flag.
+
+### Non-scheduled interrupts
+All other interrupts are not scheduled, they can occur at any time.
+Such interrupts include
+- receiving data from the computer through the serial interface
+- ADC conversion being complete
+- buttons being pressed
+
+Their interrupt handling routines each try to set a flag for whatever occurred as quickly as possible and then return.
+
+### Main routine
+The main routine waits in an endless loop until some flag has been set by an interrupt handler.
+It then processes that task and in the end clears the flag and resumes waiting for the next task.
+This is done by checking each flag during the waiting time.
+
+### Tasks
+Having broken the program down into tasks the maintenance of the firmware is much easier.
+Each task has
+- a task number if it is a scheduled task
+- a flag that can be set by an interrupt handler in case of a non-scheduled task
+- an interrupt handler for non-scheduled tasks
+- code that processes the task in the main routine
+
+### Helper functions
+A number of helper functions is used in the firmware to make the code more compact and readable.
+Such functions include
+- initialization of peripherals (internal or external)
+- basic functions of peripherals (sending, receiving, starting ADC conversion, etc.)
+- calculations (ADC value conversions, temperature control calculations, etc.)
+
+## Scheduled tasks
+There are 5 scheduled tasks out of a maximum of 16.
+The assigned task numbers are located in the file timer.h.
+Like all tasks, the actual code is located in the main() routine in main.c.
+
+### ADC temperature measurement task 0
+The temperature measurement task 0 simply initiates an ADC conversion in the external ADS1248 ADC chip.
+It does this by first selecting the correct parameters for the ADC and then pulsing the output signal connected to the START pin of the ADC.
+See temperature_ADS1248_start_conversion().
+
+The ADC will then perform a conversion while the microcontroller can handle other tasks.
+When the conversion is finished the ADC will activate its READY signal which causes an (non-scheduled) interrupt in the microcontroller
+which will lead to the execution of another task.
+
+### ADC humidity measurement task 0
+The humidity measurement uses the internal ADC of the microcontroller.
+This task simply initiates a conversion, assuming the correct channel is already selected.
+The channel selection is made elsewhere.
+
+The ADC then performs a measurement leaving the microcontroller free to handle other tasks.
+When the measurement is complete an interrupt is generated which will cause another task to be processed.
+At the end of that task the ADC channel for the next measurement is set.
+
+### PID controller task
+The PID controller task uses the currently saved temperature data (as measured by another task) and computes the new controller output.
+The controller output directly goes into the 16 bit output timer compare register to update the pulse width modulation (PWM) output.
+Depending on the mode (heating or cooling) the sign of the controller output is adjusted such that the output is always positive.
+If the controller is off or in alarm state, the output is always off (0 % PWM duty cycle).
+
+### Display task
+The display task uses the currently saved temperature and humidity data (as measured at some other time by another task)
+and displays them on the 7-segment LED display.
+It does this by first converting the ADC values into physical values and then converting them into decimal.
+Then it uses the SPI communication to the 7-segment controller and transmits the updated decimal digits.
+
+### Alarm task
+The alarm task is responsible for safety interlocks.
+It checks whether all the parts forming the interlock are in a safe state.
+This is only done while the controller is active.
+As soon as at least one of the interlock devices become unsafe a sate of alarm is activated and the controller stopped.
+More about alarms \ref DevelDoc_Alarm "here".
+
+## Non-scheduled tasks
+### External ADC conversion complete task
+When the external ADS1248 ADC has completed a temperature measurement it signals the finished conversion which causes an interrupt.
+This interrupt saves the channel number of the measurement and initiates this task.
+
+In this task SPI communication to the ADS1248 ADC is used to read the ADC result which is then stored for further use.
+Each ADC channel is stored separately.
+
+### Internal ADC conversion complete task
+When the microcontroller's internal ADC has a conversion completed an interrupt is caused.
+The interrupt handler simply reads the ADC value and stores it temporarily.
+
+This task retrieves the temporarily stored ADC value and assigns it to the correct storage.
+Each ADC channel has its own value stored.
+
+After storing the data the internal ADC is reconfigured for the next measurement.
+This is done at this point because the ADC requires some time to settle before beginning the next conversion.
+By doing this here it has time to do this until the next (internal) ADC measurement task.
+
+### Encoder task
+
+
+### Controller button task
+
+
+### Serial command task
+When serial data appears at the RX input of the USART interface an interrupt handler reads each byte and puts together an ASCII command string
+until a newline character is read.
+When the end of the command is reached a flag is set to indicate that the serial command processing task must be executed.
+
+The serial command task looks at the ASCII command string and decodes it.
+This results in many sub-tasks such as reading and setting parameters which are often very short.
+
+## Program states
+The program can enter several states.
+Some of the states can be independent, others are mutually exclusive.
+
+### Controller state
+The controller can be in either of these states:
+- off state
+- cooling state
+- heating state
+
+On power up the controller starts in the off state.
+
+### Alarm state \anchor DevelDoc_Alarm
+The alarm state is always entered automatically:
+- it is set by the alarm task when the interlock fails during controller operation
+- it is set when the interlock is not established when trying to start controller operation
+
+The controller state cannot be anything except off state when the alarm state is on.
+
+The alarm state can only be turned off by user interaction.
+
+On power up the alarm state is off.
+
+\section DevelDoc_FirmwareDevel Changing the firmware
+Developing firmware for an embedded system is not the same as programming for a computer.
+Here is a (not complete) list of things a programmer must be aware of when developing firmware.
+Be sure to educate yourself about these things before making code changes.
+
+### Reduced instruction set
+The processing power of the microcontroller is much smaller than on a computer and some instructions are not available in hardware.
+For example, integer division is not part of the AVR instruction set.
+Division can still be used but the compiler will just add a software function instead of an instruction which is much slower.
+Floating point operations are not available at all on an AVR microcontroller.
+
+### Limited RAM
+Memory is a scarce quantity on a microcontroller.
+The 2 KB of RAM have to be enough for variables and the stack.
+
+### Limited flash memory
+The compiled program cannot exceed 64 KB, otherwise it will not fit in the instruction memory of the microcontroller.
+
+### No standard libraries
+Standard libraries can be included in the code but will cause the code size to be unacceptably large.
+It is best to avoid their usage.
+
+### Interrupts
+The main program may be interrupted at any time by a hardware interrupt.
+This makes the program flow not entirely linear and can cause bugs that are very hard to find.
+
+### 8 bit architecture
+The microcontroller has an 8 bit architecture.
+Integer manipulations with integers larger than 8 bit will take more than one clock cycle and are not atomic anymore.
+If an interrupt handler changes a variable while that variable is being changed in the main routine at the same time garbage values will result.
+If such a variable is used in the main routine interrupts have to be suspended before and resumed after the access.
+
+### Volatile variables
+Values used both the main routine and interrupt handlers all have to be marked \c volatile.
+This tells the compiler that the values may change unexpectedly so that code optimization will check the value of a variable every time
+without assuming that the value has not change in the meantime.
+
+### Bugs
+Bugs can cause harm to people or equipment because the firmware steers physical devices.
+
+### Debugging
+Debugging code on the microcontroller is very difficult because no text output can be generated and no debugger can be started.
+Often an oscilloscope is used for debugging instead.
+
+\section DevelDoc_Programming Compiling and programming
+## Prerequisites
+On a Linux machine the following tools should be installed to compile and program Atmel AVR microcontrollers:
+- <tt>avr-gcc</tt>, the compiler
+- <tt>avr-binutils</tt>, utilities for binary file conversions
+- <tt>avr-libc</tt>, the standard libraries
+- <tt>avrdude</tt>, a software to steer hardware programmers
+
+Additionally a hardware programmer is needed.
+The following programmer will work
+- AVRISP mkII
+
+## Existing code
+There code can be found on Github or on the data share of the laboratory:
+- Github: https://github.com/mrossini-ethz/AVRTempCtrl
+- Data share: /data/Equipment/xray/x-ray-module-setup/
+
+After some years the location of the data may drift.
+
+## Compiling
+There is a Makefile in the main directory of the sources.
+It calls <tt>avr-gcc</tt> and sets all flags correctly.
+Thus, everything that needs to be done is typing
+
+    make
+
+If a new file is added to the sources an entry in the Makefile has to be made where it says
+
+    SRC = main.c pid.c usart.c timer.c adc.c humidity.c interrupt.c temperature.c encoder.c spi.c display.c buttons.c led.c
+
+Header files do not have to be listed.
+
+## Programming
+Programming is the act of downloading the binary file onto the microcontroller.
+This requires the hardware programmer.
+There has to be write access to that USB device for the user trying to do the programming.
+Once this is set up one can call
+
+    make program
+
+This calls \c avrdude with the correct parameters.
+If another programmer than AVRISP mkII is used this has to be indicated in the Makefile where it says
+
+    AVRDUDE_PROGRAMMER = avrispmkII
+
+\note The microcontroller also has re-programmable fuse bits.
+These are set in such a way that the programming of the microcontroller will \a not cause the EEPROM to be erased.
+The fuse bits can be programmed also with \c avrdude.
+See the \c avrdude manual for instructions.
+Be very careful because this can make the microcontroller completely unusable.
+
+*/

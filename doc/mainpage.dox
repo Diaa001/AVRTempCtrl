@@ -1,0 +1,14 @@
+/**
+
+\mainpage
+\tableofcontents
+
+AVRTempCtrl controls temperature of a physical setup by varying the flow of energy in and out of the setup using temperature sensor feedback.
+
+- If you are a user of the controller, see the \ref UserDoc "User documentation".
+
+- If you are maintaining the setup, refer to the \ref MaintDoc "Maintainer documentation".
+
+- If you plan to change the behaviour of the controller, read the \ref DevelDoc "Developer documentation".
+
+*/

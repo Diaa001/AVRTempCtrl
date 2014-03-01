@@ -1,0 +1,106 @@
+/**
+
+\page UserDoc User documentation
+\brief Documentation relevant to users of the temperature controlled setup
+\tableofcontents
+
+\section UserDoc_Intro Introduction
+AVRTempCtrl is an electronic device that controls the temperature of a system.
+It does this by measuring the system with a sensor and processing the resulting value to control the heat flow in and out of the system.
+Heat is pumped through the use of peltier elements.
+
+There are two kinds of interfaces that a one can use to manipulate the action of the temperature controller:
+- the physical interface that consists of buttons and numerical displays and LEDs
+- the serial interface that allows control through the computer, manually or automatically
+
+\section UserDoc_Params Controllable parameters
+The most important parameters that can be set are
+- controller state (COOL, HEAT, or OFF)
+- controller set point (target temperature)
+- alarm reset
+
+on the other hand, parameters that can be read are
+- controller state (COOL, HEAT, or OFF)
+- controller set point (target temperature)
+- temperature
+- humidity
+- alarm state
+- interlock state
+
+\section UserDoc_Usage Typical usage
+The controller is in OFF state when power is turned on.
+Before changing that it is important to check the \ref UserDoc_Interlocks "interlocks" and make sure they are in a safe state.
+There is a default set point (target temperature).
+If another temperature is desired, this can be changed.
+Finally, the controller can be turned on.
+During operation, the set point can be changed any time, without turning the controller state off and on.
+When finished the controller should be turned into the OFF state.
+
+\section UserDoc_Physical Physical interface
+missing
+
+\section UserDoc_Serial Serial interface
+AVRTempCtrl can be connected through USB to a computer.
+The device acts as a serial interface and on a Linux computer will appear as a character device with a name like <tt>/dev/ttyUSB\<n\></tt>.
+This device can be opened like any regular serial device.
+The baud rate is 19200, one stop bit, no parity.
+Once opened, an ASCII protocol is used to communicate with the device.
+
+Serial interface program
+------------------------
+There is a program, also called \c AVRTempCtrl, that is written in Python and opens a connection to the device.
+It presents a command prompt and the commands written there are sent directly to the device, unchanged.
+After sending such a command a reply is read and displayed.
+In the background the temperature and humidity are read periodically every second and written into log files.
+The log file has a name in form of a timestamp in the format \c YYYYMMDDHHMMSS.dat.
+This log file can be displayed with \c gnuplot for example.
+
+Serial commands
+---------------
+AVRTempCtrl accepts the following serial commands:
+
+Command                         | Description
+------------------------------- | -------------------------------------------------------------------------------------------------------
+<tt> :SET:SETPOINT -XX.XX </tt> | Sets the controller set point (target temperature) to the value given. Maximum number of decimals is 2.
+<tt> :GET:SETPOINT </tt>        | Returns the current controller set point (target temperature)
+<tt> :SET:STATE:CTRL XXXX </tt> | Sets the controller state to the given state (COOL, HEAT, or OFF)
+<tt> :GET:STATE:CTRL </tt>      | Returns the current controller state (COOL, HEAT, or OFF)
+<tt> :GET:TEMPERATUREn </tt>    | Returns the value of temperature sensor n (n: 0-7)
+<tt> :GET:HUMIDITYn </tt>       | Returns the value of humidity sensor n
+<tt> :GET:STATE:ALARM </tt>     | Returns the current alarm state (OFF or ON)
+<tt> :GET:STATE:INTERLOCK </tt> | Returns the current interlock state (SAVE or UNSAFE)
+<tt> :RESET:ALARM </tt>         | Turns off the alarm
+
+\section UserDoc_Sensors Sensors
+There are a maximum of 8 temperature sensors (type Pt1000) that can be read out through AVRTempCtrl.
+Temperature sensor number 0 is used as feedback for the controller.
+
+One humidity sensor (type Honeywell) can be read out and also acts as an \ref UserDoc_Interlocks "interlock".
+
+A water flow sensor in the supply for the heat exchanger that activates above 0.3 litres per minute is used as an \ref UserDoc_Interlocks "interlock".
+
+\section UserDoc_Interlocks Interlocks
+Two interlocks systems ensure safe operation of AVRTempCtrl (safe in the sense of causing no harm to the device).
+These two interlocks are combined into one interlock which is either safe when all the interlocks are safe or unsafe if just one of the interlocks is unsafe.
+The interlocks mentioned are:
+- water interlock
+- humidity interlock
+
+Water interlock
+---------------
+The water interlock ensures that the controller cannot be operated without water flowing through the heat exchanger. It activates above a flux of 0.3 litres per minute.
+
+Humidity interlock
+------------------
+The humidity interlock firstly ensures the safety of the devices under test (DUT) and secondly of the system itself. It activates above a relative humidity of 60 % to ensure that there is no condensation.
+
+\section UserDoc_Alarms Alarms
+There is an alarm state in AVRTempCtrl.
+The alarm state turns on automatically when the interlock is broken, but only if
+- the controller is running
+- the controller is about to be running
+
+While the turning on is automatic, the turning off is entirely manual and requires user interaction.
+After ensuring that the interlock is safe again the user can turn off the alarm either through the \ref UserDoc_Physical "physical" or the \ref UserDoc_Serial "serial" interface.
+
+*/
