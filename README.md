@@ -1,4 +1,0 @@
-AVRTempCtrl
-===========
-
-AVR Temperature Controller
