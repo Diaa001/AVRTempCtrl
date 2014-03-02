@@ -7,6 +7,34 @@
 #include "display.h"
 #include "spi.h"
 
+/* *** Display constants *********************************************************************************************************************************** */
+
+#define DISPLAY_REG_NOP			0x0	///< Display command that executes no operation
+#define DISPLAY_REG_DIGIT_0		0x1	///< Display command that sets digit 0
+#define DISPLAY_REG_DIGIT_1		0x2	///< Display command that sets digit 1
+#define DISPLAY_REG_DIGIT_2		0x3	///< Display command that sets digit 2
+#define DISPLAY_REG_DIGIT_3		0x4	///< Display command that sets digit 3
+#define DISPLAY_REG_DIGIT_4		0x5	///< Display command that sets digit 4
+#define DISPLAY_REG_DIGIT_5		0x6	///< Display command that sets digit 5
+#define DISPLAY_REG_DIGIT_6		0x7	///< Display command that sets digit 6
+#define DISPLAY_REG_DIGIT_7		0x8	///< Display command that sets digit 7
+#define DISPLAY_REG_DECODE_MODE		0x9	///< Display command that sets decoding mode for each digit
+#define DISPLAY_REG_INTENSITY		0xA	///< Display command to set the display intensity
+#define DISPLAY_REG_SCAN_LIMIT		0xB	///< Display command to set the number of digits in the display
+#define DISPLAY_REG_SHUTDOWN		0xC	///< Display command to shutdown the display
+#define DISPLAY_REG_DISPLAY_TEST	0xF	///< Display command to initiate a display test
+
+#define DISPLAY_CODE_B_MINUS		0xA	///< Display code for a minus sign
+#define DISPLAY_CODE_B_CHAR_E		0xB	///< Display code for character E
+#define DISPLAY_CODE_B_CHAR_H		0xC	///< Display code for character H
+#define DISPLAY_CODE_B_CHAR_L		0xD	///< Display code for character L
+#define DISPLAY_CODE_B_CHAR_P		0xE	///< Display code for character P
+#define DISPLAY_CODE_B_BLANK		0xF	///< Display code for blank digit
+
+#define DISPLAY_CODE_DECIMAL_POINT	0x80	///< Display flag for a decimal point
+
+/* *** Display functions *********************************************************************************************************************************** */
+
 void display_init(void)
 {
 	SPI_set_sample_rising_edge();

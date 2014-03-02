@@ -37,36 +37,6 @@
 
 /* *** Temperature constants ******************************************************************************************************************************* */
 
-#define ADS1248_REG_MUX0	0x00	///< Address of the MUX0 register in the ADS1248 ADC
-#define ADS1248_REG_VBIAS	0x01	///< Address of the VBIAS register in the ADS1248 ADC
-#define ADS1248_REG_MUX1	0x02	///< Address of the MUX1 register in the ADS1248 ADC
-#define ADS1248_REG_SYS0	0x03	///< Address of the SYS0 register in the ADS1248 ADC
-#define ADS1248_REG_OFC0	0x04	///< Address of the OFC0 register in the ADS1248 ADC
-#define ADS1248_REG_OFC1	0x05	///< Address of the OFC1 register in the ADS1248 ADC
-#define ADS1248_REG_OFC2	0x06	///< Address of the OFC2 register in the ADS1248 ADC
-#define ADS1248_REG_FSC0	0x07	///< Address of the FSC0 register in the ADS1248 ADC
-#define ADS1248_REG_FSC1	0x08	///< Address of the FSC1 register in the ADS1248 ADC
-#define ADS1248_REG_FSC2	0x09	///< Address of the FSC2 register in the ADS1248 ADC
-#define ADS1248_REG_IDAC0	0x0a	///< Address of the IDAC0 register in the ADS1248 ADC
-#define ADS1248_REG_IDAC1	0x0b	///< Address of the IDAC1 register in the ADS1248 ADC
-#define ADS1248_REG_GPIOCFG	0x0c	///< Address of the GPIOCFG register in the ADS1248 ADC
-#define ADS1248_REG_GPIODIR	0x0d	///< Address of the GPIODIR register in the ADS1248 ADC
-#define ADS1248_REG_GPIODAT	0x0e	///< Address of the GPIODAT register in the ADS1248 ADC
-
-#define ADS1248_CMD_WAKEUP	0x00	///< Code for the wakeup serial command of the ADS1248 ADC
-#define ADS1248_CMD_SLEEP	0x02	///< Code for the sleep serial command of the ADS1248 ADC
-#define ADS1248_CMD_SYNC	0x04	///< Code for the sync serial command of the ADS1248 ADC
-#define ADS1248_CMD_RESET	0x06	///< Code for the reset serial command of the ADS1248 ADC
-#define ADS1248_CMD_NOP		0xff	///< Code for the NOP serial command of the ADS1248 ADC
-#define ADS1248_CMD_RDATA	0x12	///< Code for the read data serial command of the ADS1248 ADC
-#define ADS1248_CMD_RDATAC	0x14	///< Code for the read data continuously serial command of the ADS1248 ADC
-#define ADS1248_CMD_SDATAC	0x16	///< Code for the stop continuously read serial command of the ADS1248 ADC
-#define ADS1248_CMD_RREG	0x20	///< Code for the read register serial command of the ADS1248 ADC
-#define ADS1248_CMD_WREG	0x40	///< Code for the write register serial command of the ADS1248 ADC
-#define ADS1248_CMD_SYSOCAL	0x60	///< Code for the offset calibration serial command of the ADS1248 ADC
-#define ADS1248_CMD_SYSGCAL	0x61	///< Code for the gain calibration serial command of the ADS1248 ADC
-#define ADS1248_CMD_SELFOCAL	0x62	///< Code for the offset calibration serial command of the ADS1248 ADC
-
 /* Start and ready ports and pins */
 #define ADS1248_START_0_PORT	PORTB	///< Port output register of the micro controller for the start signal to the first ADS1248 ADC
 #define ADS1248_START_0_DDR	DDRB	///< Data direction register of the micro controller for the start signal to the first ADS1248 ADC
@@ -93,27 +63,6 @@
 extern int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_SENSORS];				///< ADC value of the last reading of each Pt1000 temperature sensor
 #define TEMPERATURE_NUMBER_OF_ADS1248	2						///< Number of ADS1248 ADC chips in the system
 extern uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];	///< Sensor number and ready flag for each ADS1248 ADC (interrupt set)
-
-/* *** Temperature constants ******************************************************************************************************************************* */
-
-/* Values that represent the valid range and step size of the lookup table from temperature to ADC value */
-#define ADS1248_LOOKUP_TMIN		-12288					///< Lowest valid temperature for the lookup table temperature -> ADC
-#define ADS1248_LOOKUP_TMAX		+12288					///< Highest valid temperature for the lookup table temperature -> ADC
-#define ADS1248_LOOKUP_TSTEP_LOG	10					///< Log2 of the temperature step size in the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_TSTEP		(1 << ADS1248_LOOKUP_TSTEP_LOG)		///< Step size between temperatures in the lookup table ADC -> temperature
-
-/* Values that represent the valid range and step size of the lookup table ADC -> temperature */
-#define ADS1248_LOOKUP_ADCMIN		-32768					///< Lowest valid ADC value for the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCMAX		+32767					///< Highest valid ADC value for the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCSTEP_LOG	11					///< Log2 of the ADC values step size in the lookup table ADC -> temperature
-#define ADS1248_LOOKUP_ADCSTEP		(1 << ADS1248_LOOKUP_ADCSTEP_LOG)	///< Step size between ADC values in the lookup table ADC -> temperature
-
-/* *** Temperature macros ********************************************************************************************************************************** */
-
-/** \brief Macro that calculates the index in the lookup table nearest to the value given */
-#define temperature_to_ADS1248_lookup_index(T)		(((T) - ADS1248_LOOKUP_TMIN) >> ADS1248_LOOKUP_TSTEP_LOG)
-/** \brief Macro that calculates the index in the lookup table nearest to the value given */
-#define temperature_ADS1248_to_temp_lookup_index(A)	(((A) - ADS1248_LOOKUP_ADCMIN) >> ADS1248_LOOKUP_ADCSTEP_LOG)
 
 /* *** Temperature functions ******************************************************************************************************************************* */
 
