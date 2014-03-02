@@ -1,3 +1,6 @@
+doc/latex
+doc/html
+
 # Object files
 *.o
 *.ko

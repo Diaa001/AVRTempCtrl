@@ -1,3 +1,8 @@
+/**
+	\file
+	\ingroup Temperature
+	\brief Definition of functions and variables related to temperature sensors
+ */
 #include <stdint.h>
 #include <util/delay.h>
 #include "temperature.h"
@@ -8,6 +13,8 @@ int16_t temperature_ADC [TEMPERATURE_NUMBER_OF_SENSORS];
 uint8_t _temperature_ADS1248_ready [TEMPERATURE_NUMBER_OF_ADS1248];
 
 /**
+	\brief Lookup table for conversion from temperature in Celsius to ADC value
+
 	ADC values of ADS1248 measurements for temperatures -12288, -11264, -10240, -9216,
 	-8192, -7168, -6144, -5120, -4096, -3072, -2048, -1024, 0, 1024, 2048, 3072, 4096,
 	5120, 6144, 7168, 8192, 9216, 10240, 11264, 12288 (100 x degrees Celsius)
@@ -18,6 +25,8 @@ int16_t temperature_to_ADS1248_lookup [] = {
 };
 
 /**
+	\brief Lookup table for conversion from ADC value to temperature in Celsius
+
 	Temperature values (Celsius times 100) of ADS1248 measurements for ADC values -32768,
 	-30720, -28672, -26624, -24576, -22528, -20480, -18432, -16384, -14336, -12288, -10240,
 	-8192, -6144, -4096, -2048, 0, 2048, 4096, 6144, 8192, 10240, 12288, 14336, 16384,
@@ -29,6 +38,14 @@ int16_t temperature_ADS1248_to_temp_lookup [] = {
 	8912, 9735, 10559, 11385, 12214, 13044
 };
 
+/**
+	Converts an integer that is 100 times the Celsius value of a temperature into ADC units of the ADS1248 ADC
+	by using a lookup table. The reason for using a lookup table is the fact that the conversion is non-linear
+	and computing resources on the micro controller are limited. Because the micro controller has no instruction
+	for division the step size in the table is a power of 2 which simplifies the division to a bit shift operation.
+	\param temperature Signed integer value of degrees Celsius (times 100 to avoid using floating point numbers)
+	\return ADC value that corresponds to the given temperature
+ */
 int16_t temperature_to_ADS1248(int16_t temperature)
 {
 	int16_t a;
@@ -56,6 +73,15 @@ int16_t temperature_to_ADS1248(int16_t temperature)
 	return A + (((B - A) * ((int32_t)(temperature - a)) + ADS1248_LOOKUP_TSTEP / 2) >> ADS1248_LOOKUP_TSTEP_LOG);
 }
 
+/**
+	Converts an integer that represents the ADC value read from a ADS1248 ADC into 100 times the Celsius value
+	of a temperature measured with the Pt1000 sensor by using a lookup table. The reason for using a lookup table
+	is the fact that the conversion is non-linear and computing resources on the micro controller are limited.
+	Because the micro controller has no instruction	for division the step size in the table is a power of 2 which
+	reduces the division to a bit shift operation.
+	\param ADC_val Signed integer ADC value of ADS1248 ADC (leading 16 bit)
+	\return Temperature in Celsius that corresponds to the given ADC value (times 100 to avoid using floating point numbers)
+ */
 int16_t temperature_ADS1248_to_temp(int16_t ADC_val)
 {
 	int16_t a;
@@ -78,6 +104,14 @@ int16_t temperature_ADS1248_to_temp(int16_t ADC_val)
 	return (uint16_t) tmp;
 }
 
+/**
+	Reads a string and converts a value therein into a temperature. The string can have either sign, plus or minus, or
+	neither. Leading spaces or tabs are ignored. Two decimal places are considered and the string may start with a decimal
+	point. The resulting number is multiplied by 100 and stored in the second argument.
+	\param string String containing a decimal number to be converted
+	\param temperature Integer value to hold the converted decimal number, times 100
+	\return Positive, when successful, zero otherwise
+ */
 uint8_t temperature_string_to_temp(const char * string, int16_t * temperature)
 {
 	/* Skip whitespace */
@@ -133,6 +167,12 @@ uint8_t temperature_string_to_temp(const char * string, int16_t * temperature)
 	return 1;
 }
 
+/**
+	Converts a temperature given in Celsius (times 100 to avoid the use of fractional/floating point values) into
+	a string with a minus sign (where appropriate) and two decimal places.
+	\param temperature Temperature in Celsius (times 100)
+	\param string Pointer to a string that will hold the result
+ */
 void temperature_to_string(int16_t temperature, char * string)
 {
 	/* Determine the sign of the temperature */
@@ -163,6 +203,12 @@ void temperature_to_string(int16_t temperature, char * string)
 	}
 }
 
+/**
+	Sequentially initializes all ADS1248 ADC chips using SPI communication. Micro controller
+	inputs and outputs as well as interrupts are set up for the start and conversion ready
+	signals. The ADC is set up to in terms of differential inputs, use of reference voltage,
+	PGA (programmable gain amplifier) gain, conversion rate, and excitation currents.
+ */
 void temperature_ADS1248_init(void)
 {
 	/* Initialize both ADS1248 ADCs */
@@ -229,6 +275,29 @@ void temperature_ADS1248_init(void)
 	}
 }
 
+/**
+	\brief Selects the ADC channel of the appropriate ADS1248 chip
+
+	Internal function used to reprogram the ADS1248 ADCs corresponding to the
+	given channel to use a different pair of inputs for the differential
+	measurement and the excitation current output.
+	\param channel Channel / sensor number to be selected
+	\warning A delay of several micro seconds is required after calling this function
+	before starting a conversion to allow the analog multiplexer to settle. The amount
+	of delay depends on the conversion rate that the ADC is programmed to.
+	SPS	| Delay
+	------- | -------
+	5	| > 200 ms
+	10	| > 100 ms
+	20	| > 50 ms
+	40	| > 25 ms
+	80	| > 12.5 ms
+	160	| > 6.5 ms
+	320	| > 3.5 ms
+	640	| > 1.7 ms
+	1000	| > 1.2 ms
+	2000	| > 0.6 ms
+ */
 static void temperature_ADS1248_select_sensor(uint8_t channel)
 {
 	SPI_set_sample_falling_edge();
@@ -262,12 +331,44 @@ static void temperature_ADS1248_select_sensor(uint8_t channel)
 		SPI_deselect(SPI_CS_ADS1248_1);
 }
 
+/**
+	Reprograms the appropritate ADS1248 ADC to use the appropriate inputs corresponding to the
+	given channel / sensor number and - after a delay to allow the device to settle - starts a
+	conversion by pulsing the start signal high.
+	\param channel The channel number for which to start a conversion
+	\warning When changing the conversion rate of the ADC a delay has to be changed in this function!
+	SPS	| Delay
+	------- | -------
+	5	| > 200 ms
+	10	| > 100 ms
+	20	| > 50 ms
+	40	| > 25 ms
+	80	| > 12.5 ms
+	160	| > 6.5 ms
+	320	| > 3.5 ms
+	640	| > 1.7 ms
+	1000	| > 1.2 ms
+	2000	| > 0.6 ms
+ */
 void temperature_ADS1248_start_conversion(uint8_t channel)
 {
 	/* Select the sensor to measure before starting the conversion */
 	temperature_ADS1248_select_sensor(channel);
 
-	/* Wait for the ADC to settle */
+	/* Wait for the ADC to settle. This delay depends on the conversion rate of the ADC!
+
+		SPS	Delay
+		5	> 200 ms
+		10	> 100 ms
+		20	> 50 ms
+		40	> 25 ms
+		80	> 12.5 ms
+		160	> 6.5 ms
+		320	> 3.5 ms
+		640	> 1.7 ms
+		1000	> 1.2 ms
+		2000	> 0.6 ms
+	*/
 	_delay_ms(30);
 
 	if (channel < 4) {
@@ -291,6 +392,10 @@ void temperature_ADS1248_start_conversion(uint8_t channel)
 	}
 }
 
+/**
+	Checks whether an ADC conversion is ready for readout
+	\return The channel number which is ready for readout, or -1 if no channel is ready
+ */
 int8_t temperature_ADS1248_ready(void) {
 	/* If no channel is ready, return -1; */
 	uint8_t channel = -1;
@@ -311,6 +416,16 @@ int8_t temperature_ADS1248_ready(void) {
 	return channel;
 }
 
+/**
+	Reads the ADC result from the ADS1248 chip corresponding to the channel / sensor
+	number using SPI communication. The ADS1248 ADC has 24 bit resolution but only
+	the most significant 16 bits are used because only approximately 19-20 bits are
+	noise free by specification and in the applicable temperature range the resolution
+	is more than enough for 2 decimal places with 16 bit.
+	\param channel The channel number for which to read the ADC result
+	\return The ADC value read from the ADS1248 chip corresponding to the given
+	channel / sensor number
+ */
 int16_t temperature_ADS1248_read_result(uint8_t channel)
 {
 	SPI_set_sample_falling_edge();

@@ -1,9 +1,22 @@
+/**
+	\file
+	\ingroup Timer
+	\brief Definitions of functions and variables related to the timers of the microcontroller
+ */
+
 #include <avr/io.h>
 
 #include "timer.h"
 
 volatile uint8_t _task = NUMBER_OF_TASKS - 1;
 
+/**
+	Activates timer 0 and configures it to count and overflow 16 times per second.
+	The overflows are used as an interrupt source for the scheduler which will
+	change the task every time they occur.
+	Because scheduled tasks should be executed every second the 16 overflows
+	correspond to \ref NUMBER_OF_TASKS.
+ */
 void timer_8bit_cnt0_init(void)
 {
 	/* Initialize the timer value to 0 */
@@ -34,6 +47,12 @@ void timer_8bit_cnt0_init(void)
 	TIMSK0 |= (1 << OCIE0B);
 }
 
+/**
+	Configures and activates timer 1 which is used for the temperature controller
+	pulse width modulation (PWM) output.
+	The timer frequency is chosen to exactly be in sync with timer 0 which is the
+	frequency at which the controller recalculates its output.
+ */
 void timer_16bit_cnt1_init(void)
 {
 	/* Initialize the timer value such that it starts at zero always after the PID task */

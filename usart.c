@@ -1,3 +1,9 @@
+/**
+	\file
+	\ingroup USART
+	\brief Definition of functions and variables related to the serial interface
+ */
+
 #include <avr/io.h>
 #include "usart.h"
 

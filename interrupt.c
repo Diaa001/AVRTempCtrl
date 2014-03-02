@@ -1,3 +1,12 @@
+/**
+	\file
+	\ingroup Interrupts
+	\brief Definitions of functions and variables related to interrupts
+
+	\addtogroup Interrupts
+	\{
+ */
+
 #include <string.h>
 #include "interrupt.h"
 #include "usart.h"
@@ -9,7 +18,20 @@
 
 uint8_t _sreg_save;
 
-/* USART0 RX complete interrupt handler */
+/**
+	\brief USART0 RX complete interrupt handler
+
+	This interrupt handler is called whenever a new byte has been received
+	by the USART interface.
+	It reads the incoming byte and appends it to a the string \ref rx_buffer
+	until a newline character is encountered.
+	If that happens the \ref rx_complete flag is set.
+	It stores a maximum of \ref RX_BUFFER_LENGTH characters.
+	If the buffer is full, it is cleared and the incoming character is written
+	into the emptied buffer.
+
+	See also \ref USART "here".
+ */
 ISR(USART0_RX_vect) {
 	/* Make sure the buffer does not overflow */
 	if (rx_buffer_pointer >= RX_BUFFER_LENGTH) {
@@ -39,6 +61,15 @@ ISR(USART0_RX_vect) {
 	}
 }
 
+/**
+	\brief Timer 0 overflow interrupt handler (scheduler function)
+
+	This interrupt handler is called always when the timer 0 counter overflows.
+	It schedules the tasks by incrementing the \ref _task variable and setting
+	the \ref TASK_START flag.
+	The main() routine then handles the processing of the task and in the end
+	clears the \ref TASK_START flag.
+ */
 ISR(TIMER0_COMPB_vect)
 {
 	/* Switch to the next task */
@@ -48,6 +79,15 @@ ISR(TIMER0_COMPB_vect)
 	_task |= TASK_START;
 }
 
+/**
+	\brief ADC conversion complete interrupt handler
+
+	This interrupt handler is called always when a conversion with the internal ADC
+	completes.
+	It stores the ADC value in variable \ref _ADC_result and sets a conversion complete flag.
+	The main() routine should then store this value elsewhere and clear the conversion
+	complete flag.
+ */
 ISR(ADC_vect)
 {
 	/* Store the ADC result */
@@ -57,6 +97,20 @@ ISR(ADC_vect)
 	_ADC_result |= (1 << ADC_CONVERSION_COMPLETE_BIT);
 }
 
+/**
+	\brief Pin change interrupt handler 1
+
+	This interrupt handler is called whenever a pin of port B changes its
+	value unless it's masked.
+	The rotary encoder is connected to port B.
+	The function uses the \ref _encoder_state variable which stores the last state
+	to determine the encoder increment.
+	It then stores the new state in \ref _encoder_state.
+	If a state is skipped for some reason (e.g. the encoder was rotated to fast)
+	the increment is considered to be zero because it cannot be decided wheter
+	the increment was positive or negative.
+	This should usually not happen.
+ */
 ISR(PCINT1_vect)
 {
 	/* Get the new encoder state */
@@ -96,6 +150,20 @@ ISR(PCINT1_vect)
 	_encoder_state = new_state;
 }
 
+/**
+	\brief Pin change interrupt handler 2
+
+	This interrupt handler is called whenever a pin of port C changes its
+	value unless it's masked.
+	The (conversion) READY signal from the two ADS1248 ADCs is connected
+	to this port as well as the three buttons.
+	The routine checks which state has changed and stores the new state
+	while setting a flag to indicate the change.
+	The main() routine should then take actions to accomodate the state
+	change.
+	If it does not acknowledge a button press state change and the next
+	change already occurs then an entire button action is lost.
+ */
 ISR(PCINT2_vect)
 {
 	uint8_t pin = PINC;
@@ -136,3 +204,5 @@ ISR(PCINT2_vect)
 		_button_state[2] = BUTTON_CHANGED_FLAG;
 	}
 }
+
+/** \} */

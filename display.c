@@ -1,3 +1,9 @@
+/**
+	\file
+	\ingroup Display
+	\brief Definitions of functions related to the 7-segment display
+ */
+
 #include "display.h"
 #include "spi.h"
 
@@ -24,6 +30,13 @@ void display_init(void)
 	SPI_deselect(SPI_CS_MAX7221);
 }
 
+/**
+	Transforms the given temperature that is represented as degrees Celsius
+	times 100 into decimal digits in preparation for display.
+	Then it transfers the information to the 7-segment display controller.
+	The display is updated as soon as the chip select signal is deactivated.
+	\param temperature Integer that represents temperature in Celsius multiplied by the factor 100.
+ */
 void display_temperature(int16_t temperature)
 {
 	SPI_set_sample_rising_edge();
@@ -88,6 +101,12 @@ void display_temperature(int16_t temperature)
 	SPI_deselect(SPI_CS_MAX7221);
 }
 
+/**
+	Transforms the humidity value given in percent relative humidity into
+	decimal digits and sends the information to the 7-segment display controller.
+	The display is updated when the chip select signal is deactivated.
+	\param humidity Integer that represents relative humidity in percent.
+ */
 void display_humidity(uint8_t humidity)
 {
 	SPI_set_sample_rising_edge();

@@ -1,3 +1,9 @@
+/**
+	\file
+	\ingroup Encoder
+	\brief Definition of functions and variables related to the rotary encoder user interface
+ */
+
 #include "encoder.h"
 
 volatile uint8_t _encoder_state;

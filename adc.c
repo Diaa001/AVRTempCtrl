@@ -1,9 +1,21 @@
+/**
+	\file
+	\ingroup ADC
+	\brief Definition of functions, variables, and constants related to the internal ADC
+ */
+
 #include <avr/io.h>
 
 #include "adc.h"
 
 volatile uint16_t _ADC_result;
 
+/**
+	Initializes the internal ADC.
+	It is important that the ADC channel selection is such that it corresponds to the first scheduled ADC measurement task.
+	This is because the ADC channel is selected always after retrieving the result and not before the measurement.
+	That allows the ADC to settle before measurements.
+ */
 void ADC_init(void)
 {
 	/* Use AVCC (5 V) as voltage reference */

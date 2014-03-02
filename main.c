@@ -1,3 +1,35 @@
+/**
+	\file
+	\ingroup Main
+	\brief Definition of the main routine with periphery initialization and main loop of execution
+
+	\addtogroup Main Main routine
+	\brief The main routine initializes and processes all tasks
+
+	The main routine initializes the microcontroller and all its peripherals (internal and
+	external).
+	When this is completed it enters an infinite loop where it awaits assignment of tasks through
+	interrupts.
+
+	The interrupt handlers all set a flag that indicate an action to be taken.
+	In every iteration of the main loop each of these flags is checked and if
+	one of the flags is set some code block is executed.
+	Then the next loop iteration occurs.
+	The flag checking is organised in a very large <tt>if-elseif</tt> statement.
+	The order of the \c if and \c elseif statements is based on the priority of the
+	individual tasks.
+
+	The code in the main() routine often uses helper functions defined in files other than main.c.
+	This helps keeping the length of the routine from being over excessive.
+
+	\warning The execution inside the main() function and the functions called therein can be
+	interrupted at any time by an interrupt handler.
+	After the interrupt handler finishes the execution within the main() function resumes.
+
+	\warning Care must be taken when accesing variables that can be changed in interrupt handlers.
+	See \ref Interrupts for details.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -21,13 +53,13 @@
 #include "led.h"
 #include "buttons.h"
 
-#define SUBSTR(A, B)		((A) + strlen(B))
-#define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)
-#define EQ_SUBCMD(A, C, B)	(strncmp(SUBSTR((A), (C)), (B), strlen(B)) == 0)
+#define SUBSTR(A, B)		((A) + strlen(B))					///< Returns the pointer within A offset by the length of the string B
+#define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)			///< Tests whether string A matches B for the length of string B
+#define EQ_SUBCMD(A, C, B)	(strncmp(SUBSTR((A), (C)), (B), strlen(B)) == 0)	///< Tests whether string B matches A, offset by the length of string C
 
-#define PID_CTRL_COOLING	0
-#define PID_CTRL_HEATING	1
-#define PID_CTRL_OFF		2
+#define PID_CTRL_COOLING	0		///< PID controller state that represents cooling
+#define PID_CTRL_HEATING	1		///< PID controller state that represents heating
+#define PID_CTRL_OFF		2		///< PID controller state that represents control off
 pidData_t PID_controller_settings[2];		///< Structures holding the PID controller parameters, the integral, and such
 uint8_t PID_controller_state = PID_CTRL_OFF;	///< Controller mode: PID_CTRL_OFF, PID_CTRL_COOLING, or PID_CTRL_HEATING
 int16_t PID_controller_setpoint_T;		///< Setpoint of the PID controller in degrees Celsius (times 100)
@@ -52,6 +84,16 @@ uint8_t check_alarm(void)
 	return humidity > 60 || water_interlock_open;
 }
 
+/**
+	\brief Main program routine
+
+	Program entry function that initializes all peripherals and then enters an infinite loop
+	where it handles all of the scheduled and unscheduled tasks.
+	See \ref Main "here" for details.
+
+	\return This function should never return.
+	\ingroup Main
+*/
 int main (void) {
 	/* Set clock to 4 MHz by setting the clock division (prescale) to 2 */
 	clock_set_prescale_2();

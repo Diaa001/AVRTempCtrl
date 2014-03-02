@@ -1,3 +1,9 @@
+/**
+	\file
+	\ingroup Buttons
+	\brief Definition of functions and variables related to buttons.
+ */
+
 #include "buttons.h"
 
 uint8_t _button_state [BUTTONS_NUM];
