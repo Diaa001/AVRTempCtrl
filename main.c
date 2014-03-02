@@ -272,8 +272,8 @@ int main (void) {
 				PID_controller_state = PID_CTRL_OFF;
 				LED_set(LED_ACTIVE, LED_OFF);
 			}
-		} else if (rx_complete) {
-			char * cmd = (char *) rx_buffer[rx_buffer_sel];
+		} else if (_rx_complete) {
+			char * cmd = (char *) _rx_buffer[_rx_buffer_sel];
 			if (EQ_CMD(cmd, ":SET")) {
 				uint8_t alarm_error = 0;
 				if (EQ_SUBCMD(cmd, ":SET", ":SETPOINT")) {
@@ -513,8 +513,8 @@ int main (void) {
 				/* Erase the transmit buffer */
 				memset((void *) tx_buffer, '\0', TX_BUFFER_LENGTH);
 			}
-			memset((void *) rx_buffer[rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
-			rx_complete = 0;
+			memset((void *) _rx_buffer[_rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
+			_rx_complete = 0;
 		}
 		PORTA &= ~(1 << PA0);
 	} /* Main loop */

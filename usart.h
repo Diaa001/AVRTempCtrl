@@ -19,9 +19,9 @@
 
 	The reception of characters from the computer is interrupt driven.
 	The interrupt handler puts together a serial command and stores it
-	in one of the two \ref rx_buffer arrays.
-	When a newline is received the \ref rx_complete flag is set and the
-	\ref rx_buffer_sel is toggled.
+	in one of the two \ref _rx_buffer arrays.
+	When a newline is received the \ref _rx_complete flag is set and the
+	\ref _rx_buffer_sel is toggled.
 	This means that the receiving buffer is double buffered.
 
 	The sending of responses to the computer is single buffered and not
@@ -44,10 +44,10 @@
 
 /* *** USART variables ************************************************************************************************************************************* */
 
-extern volatile char rx_buffer [2][RX_BUFFER_LENGTH];	///< Buffers used for receiving serial commands
-extern volatile uint8_t rx_buffer_pointer;		///< Pointer within the \ref rx_buffer for writing the next character
-extern volatile uint8_t rx_buffer_sel;			///< Pointer to the active receiving buffer
-extern volatile uint8_t rx_complete;			///< Flag that indicates complete reception of a serial command
+extern volatile char _rx_buffer [2][RX_BUFFER_LENGTH];	///< Buffers used for receiving serial commands
+extern volatile uint8_t _rx_buffer_pointer;		///< Pointer within the \ref _rx_buffer for writing the next character
+extern volatile uint8_t _rx_buffer_sel;			///< Pointer to the active receiving buffer
+extern volatile uint8_t _rx_complete;			///< Flag that indicates complete reception of a serial command
 extern char tx_buffer [TX_BUFFER_LENGTH];		///< Buffer used for sending serial responses
 
 /* *** USART functions ************************************************************************************************************************************* */

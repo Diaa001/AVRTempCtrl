@@ -16,16 +16,16 @@
 #include "temperature.h"
 #include "buttons.h"
 
-uint8_t _sreg_save;
+uint8_t sreg_save;
 
 /**
 	\brief USART0 RX complete interrupt handler
 
 	This interrupt handler is called whenever a new byte has been received
 	by the USART interface.
-	It reads the incoming byte and appends it to a the string \ref rx_buffer
+	It reads the incoming byte and appends it to a the string \ref _rx_buffer
 	until a newline character is encountered.
-	If that happens the \ref rx_complete flag is set.
+	If that happens the \ref _rx_complete flag is set.
 	It stores a maximum of \ref RX_BUFFER_LENGTH characters.
 	If the buffer is full, it is cleared and the incoming character is written
 	into the emptied buffer.
@@ -34,10 +34,10 @@ uint8_t _sreg_save;
  */
 ISR(USART0_RX_vect) {
 	/* Make sure the buffer does not overflow */
-	if (rx_buffer_pointer >= RX_BUFFER_LENGTH) {
+	if (_rx_buffer_pointer >= RX_BUFFER_LENGTH) {
 		/* Reset at the beginning of the buffer after clearing the buffer */
-		memset((void *) rx_buffer[1 - rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
-		rx_buffer_pointer = 0;
+		memset((void *) _rx_buffer[1 - _rx_buffer_sel], '\0', RX_BUFFER_LENGTH);
+		_rx_buffer_pointer = 0;
 	}
 
 	char byte = UDR0;
@@ -45,19 +45,19 @@ ISR(USART0_RX_vect) {
 	/* Check whether the current character marks the end of the message */
 	if (byte != '\n') {
 		/* Read the next character into the buffer */
-		rx_buffer[1 - rx_buffer_sel][rx_buffer_pointer] = byte;
+		_rx_buffer[1 - _rx_buffer_sel][_rx_buffer_pointer] = byte;
 
 		/* Increment the buffer pointer */
-		rx_buffer_pointer++;
+		_rx_buffer_pointer++;
 	} else {
 		/* Set RX complete flag that is handled in the main routine */
-		rx_complete = 1;
+		_rx_complete = 1;
 
 		/* Switch buffers */
-		rx_buffer_sel = 1 - rx_buffer_sel;
+		_rx_buffer_sel = 1 - _rx_buffer_sel;
 
 		/* Reset the buffer pointer */
-		rx_buffer_pointer = 0;
+		_rx_buffer_pointer = 0;
 	}
 }
 

@@ -72,12 +72,12 @@
 
 /* *** Interrupt variables ********************************************************************************************************************************* */
 
-extern uint8_t _sreg_save;	///< Variable used to store the state of the interrupt enable bit befor suspending interrupts
+extern uint8_t sreg_save;	///< Variable used to store the state of the interrupt enable bit befor suspending interrupts
 
 /* *** Interrupt functions ********************************************************************************************************************************* */
 
-#define interrupts_suspend()	{_sreg_save = SREG; cli();}	///< Suspends interrupts such that the interrupt state can be restored afterwards
-#define interrupts_resume()	{SREG = _sreg_save;}		///< Resumes the interrupt state that was before the interrupts were suspended
+#define interrupts_suspend()	{sreg_save = SREG; cli();}	///< Suspends interrupts such that the interrupt state can be restored afterwards
+#define interrupts_resume()	{SREG = sreg_save;}		///< Resumes the interrupt state that was before the interrupts were suspended
 #define interrupts_on()		sei()				///< Turns on interrupts
 #define interrupts_off()	cli()				///< Turns off interrupts
 

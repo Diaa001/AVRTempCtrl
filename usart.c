@@ -8,10 +8,10 @@
 #include "usart.h"
 
 /* FIXME: Allocate dynamically to save flash memory */
-volatile char rx_buffer [2][RX_BUFFER_LENGTH];
-volatile uint8_t rx_buffer_sel;
-volatile uint8_t rx_buffer_pointer;
-volatile uint8_t rx_complete;
+volatile char _rx_buffer [2][RX_BUFFER_LENGTH];
+volatile uint8_t _rx_buffer_sel;
+volatile uint8_t _rx_buffer_pointer;
+volatile uint8_t _rx_complete;
 char tx_buffer [TX_BUFFER_LENGTH];
 
 void USART_init(void)
