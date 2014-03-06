@@ -76,7 +76,7 @@ uint8_t check_alarm(void)
 	/* Read sensor values */
 	uint16_t adc_val = humidity_ADC[0];
 	adc_val >>= 6;
-	uint8_t humidity = honeywell_convert_ADC_to_RH(adc_val);
+	uint8_t humidity = humidity_ADC_to_RH_honeywell(adc_val);
 
 	uint8_t water_interlock_open = (PIND & (1 << PD2));
 
@@ -205,7 +205,7 @@ int main (void) {
 				uint16_t adc_val2 = humidity_ADC[0];
 				interrupts_resume();
 				adc_val2 >>= 6;
-				uint8_t humidity = honeywell_convert_ADC_to_RH(adc_val2);
+				uint8_t humidity = humidity_ADC_to_RH_honeywell(adc_val2);
 
 				display_temperature(temperature);
 				display_humidity(humidity);
@@ -394,7 +394,30 @@ int main (void) {
 					uint16_t adc_val2 = humidity_ADC[0];
 					interrupts_resume();
 					adc_val2 >>= 6;
-					sprintf((char *) tx_buffer, "%i %%\n", honeywell_convert_ADC_to_RH(adc_val2));
+					sprintf((char *) tx_buffer, "%i %%\n", humidity_ADC_to_RH_honeywell(adc_val2));
+				} else if (EQ_SUBCMD(cmd, ":GET", ":DEWPOINT0")) {
+					int16_t adc_val, temperature, dewpoint;
+					uint8_t humidity;
+
+					/* Get the temperature */
+					adc_val = temperature_ADC[0];
+					temperature = temperature_ADS1248_to_temp(adc_val);
+
+					/* Get the humidity */
+					adc_val = humidity_ADC[0];
+					adc_val >>= 6;
+					humidity = humidity_ADC_to_RH_honeywell(adc_val);
+
+					/* Calculate the dewpoint */
+					dewpoint = humidity_dewpoint(temperature, humidity);
+
+					/* Convert value to string */
+					temperature_to_string(dewpoint, tx_buffer);
+
+					/* Add a newline after the number */
+					uint8_t len = strlen(tx_buffer);
+					tx_buffer[len + 0] = '\n';
+					tx_buffer[len + 1] = '\0';
 				} else if (EQ_SUBCMD(cmd, ":GET", ":STATE")) {
 					if (EQ_SUBCMD(cmd, ":GET:STATE", ":CTRL")) {
 						/* Check alarm state */

@@ -30,15 +30,16 @@
 
 /* *** Humidity constants ********************************************************************************************************************************** */
 
-#define HUMIDITY_NUMBER_OF_ADC	1			///< Number or humidity sensors connected to the system
+#define HUMIDITY_NUMBER_OF_ADC	1					///< Number or humidity sensors connected to the system
 
 /* *** Humidity variables ********************************************************************************************************************************** */
 
-extern int16_t humidity_ADC [HUMIDITY_NUMBER_OF_ADC];	///< Last measurement value of each humidity sensor
+extern int16_t humidity_ADC [HUMIDITY_NUMBER_OF_ADC];			///< Last measurement value of each humidity sensor
 
 /* *** Humidity functions ********************************************************************************************************************************** */
 
-uint8_t honeywell_convert_ADC_to_RH(uint16_t adc);	///< Conversion of ADC values to relative humidity for honeywell humidity sensors
+uint8_t humidity_ADC_to_RH_honeywell(uint16_t adc);			///< Conversion of ADC values to relative humidity for honeywell humidity sensors
+int16_t humidity_dewpoint(int16_t temperature, uint8_t humidity);	///< Calculates the dewpoint from temperature and relative humidity
 
 /** \} */
 
