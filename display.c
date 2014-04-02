@@ -110,6 +110,13 @@ void display_temperature(int16_t temperature)
 	tmp = temperature / 10;
 	digit[1] = temperature - 10 * tmp;
 
+	/* Eliminate leading zeros */
+	if (digit[1] == 0) {
+		/* The 0th digit may contain a minus sign */
+		digit[1] = digit[0];
+		digit[0] = DISPLAY_CODE_B_BLANK;
+	}
+
 	/* Send the SPI commands for digit 0 */
 	SPI_select(SPI_CS_MAX7221);
 	SPI_send(DISPLAY_REG_DIGIT_0);
@@ -166,6 +173,14 @@ void display_humidity(uint8_t humidity)
 	humidity = tmp;
 	tmp = humidity / 10;
 	digit[0] = humidity - 10 * tmp;
+
+	/* Eliminate leading zeros */
+	if (digit[0] == 0) {
+		digit[0] = DISPLAY_CODE_B_BLANK;
+		if (digit[1] == 0) {
+			digit[1] = DISPLAY_CODE_B_BLANK;
+		}
+	}
 
 	/* Send the SPI commands */
 	SPI_select(SPI_CS_MAX7221);
