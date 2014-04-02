@@ -23,6 +23,8 @@
 #include "pid.h"
 #include "stdint.h"
 
+int16_t PID_integral_threshold;
+
 /*! \brief Initialisation of PID controller parameters.
  *
  *  Initialise the variables used by the PID algorithm.
@@ -75,7 +77,10 @@ int16_t pid_Controller(int16_t setPoint, int16_t processValue, struct PID_DATA *
   }
 
   // Calculate Iterm and limit integral runaway
-  temp = pid_st->sumError + error;
+  if (processValue < setPoint + PID_integral_threshold && processValue > setPoint - PID_integral_threshold)
+    temp = pid_st->sumError + error;
+  else
+    temp = pid_st->sumError;
   if(temp > pid_st->maxSumError){
     i_term = MAX_I_TERM;
     pid_st->sumError = pid_st->maxSumError;

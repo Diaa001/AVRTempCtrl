@@ -133,6 +133,9 @@ int main (void) {
 	kd = eeprom_read_word(EE_CTRL_KD1);
 	pid_Init(kp, ki, kd, &PID_controller_settings[PID_CTRL_HEATING]);
 
+	/* Set the PID integral threshold to 5 degrees Celsius */
+	PID_integral_threshold = temperature_to_ADS1248(5 * 100);
+
 	/* Set the setpoint from the EEPROM memory */
 	PID_controller_setpoint_T = eeprom_read_word(EE_CTRL_SETPOINT);
 	PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
@@ -308,6 +311,11 @@ int main (void) {
 				} else if (EQ_SUBCMD(cmd, ":SET", ":KD1")) {
 					int16_t factor = atoi(SUBSTR(cmd, ":SET:KD1 "));
 					PID_controller_settings[1].D_Factor = factor;
+				} else if (EQ_SUBCMD(cmd, ":SET", ":INTTHR")) {
+					int16_t threshold = atoi(SUBSTR(cmd, ":SET:INTTHR "));
+					if (threshold < 0)
+						goto CMD_ERROR;
+					PID_integral_threshold = temperature_to_ADS1248(threshold * 100);
 				} else if (EQ_SUBCMD(cmd, ":SET", ":STATE:CTRL")) {
 					if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "OFF")) {
 						PID_controller_state = PID_CTRL_OFF;
@@ -369,6 +377,9 @@ int main (void) {
 					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[0].sumError);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":INTEGRAL1")) {
 					sprintf((char * ) tx_buffer, "%li\n", PID_controller_settings[1].sumError);
+				} else if (EQ_SUBCMD(cmd, ":GET", ":INTTHR")) {
+					int16_t threshold = temperature_ADS1248_to_temp(PID_integral_threshold);
+					sprintf((char * ) tx_buffer, "%i\n", threshold);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":PWM")) {
 					sprintf((char * ) tx_buffer, "%hu/%hu\n", OCR1B, OCR1A);
 				} else if (EQ_SUBCMD(cmd, ":GET", ":TEMPERATURE0")) {
