@@ -39,6 +39,18 @@ void display_init(void)
 {
 	SPI_set_sample_rising_edge();
 
+	/* Disable shutdown mode */
+	SPI_select(SPI_CS_MAX7221);
+	SPI_send(DISPLAY_REG_SHUTDOWN);
+	SPI_send(0x1);
+	SPI_deselect(SPI_CS_MAX7221);
+
+	/* Disable display test mode */
+	SPI_select(SPI_CS_MAX7221);
+	SPI_send(DISPLAY_REG_DISPLAY_TEST);
+	SPI_send(0x0);
+	SPI_deselect(SPI_CS_MAX7221);
+
 	/* Set the decoding mode to Code-B font for all digits */
 	SPI_select(SPI_CS_MAX7221);
 	SPI_send(DISPLAY_REG_DECODE_MODE);
