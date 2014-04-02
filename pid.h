@@ -22,7 +22,7 @@
 
 #include "stdint.h"
 
-#define SCALING_FACTOR  1
+#define SCALING_FACTOR  32
 
 /*! \brief PID Status
  *
