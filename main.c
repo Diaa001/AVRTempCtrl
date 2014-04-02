@@ -441,18 +441,20 @@ int main (void) {
 						else if (PID_controller_state == PID_CTRL_HEATING)
 							strcpy((char *) tx_buffer, "HEAT\n");
 					} else if (EQ_SUBCMD(cmd, ":GET:STATE", ":INTERLOCK")) {
-							/* Get the state of the water interlock */
-							if (check_alarm()) {
-								strcpy((char *) tx_buffer, "UNSAFE\n");
-							} else {
-								strcpy((char *) tx_buffer, "SAFE\n");
-							}
+						/* Get the state of the water interlock */
+						if (check_alarm()) {
+							strcpy((char *) tx_buffer, "UNSAFE\n");
+						} else {
+							strcpy((char *) tx_buffer, "SAFE\n");
+						}
 					} else if (EQ_SUBCMD(cmd, ":GET:STATE", ":ALARM")) {
-							if (alarm_state) {
-								strcpy((char *) tx_buffer, "ON\n");
-							} else {
-								strcpy((char *) tx_buffer, "OFF\n");
-							}
+						if (alarm_state) {
+							strcpy((char *) tx_buffer, "ON\n");
+						} else {
+							strcpy((char *) tx_buffer, "OFF\n");
+						}
+					} else {
+						goto CMD_ERROR;
 					}
 				} else if (EQ_SUBCMD(cmd, ":GET", ":STEADY")) {
 					if (alarm_state)
