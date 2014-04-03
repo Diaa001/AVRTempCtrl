@@ -43,9 +43,9 @@
 #define BUTTON_0_PIN_REG		PINC	///< Pin register for the port to which button 0 is connected
 #define BUTTON_1_PIN_REG		PINC	///< Pin register for the port to which button 1 is connected
 #define BUTTON_2_PIN_REG		PINC	///< Pin register for the port to which button 2 is connected
-#define BUTTON_0_PCINT			PCINT21	///< Pin change interrupt number of the pin tat button 0 is connected to
-#define BUTTON_1_PCINT			PCINT22	///< Pin change interrupt number of the pin tat button 1 is connected to
-#define BUTTON_2_PCINT			PCINT23	///< Pin change interrupt number of the pin tat button 2 is connected to
+#define BUTTON_0_PCINT			PCINT21	///< Pin change interrupt number of the pin that button 0 is connected to
+#define BUTTON_1_PCINT			PCINT22	///< Pin change interrupt number of the pin that button 1 is connected to
+#define BUTTON_2_PCINT			PCINT23	///< Pin change interrupt number of the pin that button 2 is connected to
 #define BUTTON_PCINT_ENABLE_FLAG	PCIE2	///< Pin change interrupt enable flat for the port the buttons are connected to
 #define BUTTON_PCINT_MASK_REG		PCMSK2	///< Pin change interrupt mask register for the port the buttons are connected to
 
@@ -53,7 +53,7 @@
 #define BUTTON_STATE_FLAG		0x01	///< Flag used to indicate the button state in \ref _button_state
 #define BUTTON_CHANGED_FLAG		0x80	///< Flag used to indigate change of state of a button in \ref _button_state
 
-#define BUTTON_CTRL			0	///< Assignement for the button that controls the state of the temperature controller
+#define BUTTON_CTRL			0	///< Assignment for the button that controls the state of the temperature controller
 
 /* *** Button variables ************************************************************************************************************************************ */
 

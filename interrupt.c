@@ -186,21 +186,24 @@ ISR(PCINT2_vect)
 		_temperature_ADS1248_ready[1] |= TEMPERATURE_ADS1248_READY_FLAG;
 	}
 
-	if ((pin & BUTTON_0) && !(_button_state[0] & BUTTON_STATE_FLAG)) {
+	/* Check the button state against the saved state for button 0 */
+	if ((pin & (1 << BUTTON_0)) && !(_button_state[0] & BUTTON_STATE_FLAG)) {
 		_button_state[0] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
-	} else if (!(pin & BUTTON_0) && (_button_state[0] & BUTTON_STATE_FLAG)) {
+	} else if (!(pin & (1 << BUTTON_0)) && (_button_state[0] & BUTTON_STATE_FLAG)) {
 		_button_state[0] = BUTTON_CHANGED_FLAG;
 	}
 
-	if ((pin & BUTTON_1) && !(_button_state[1] & BUTTON_STATE_FLAG)) {
+	/* Check the button state against the saved state for button 1 */
+	if ((pin & (1 << BUTTON_1)) && !(_button_state[1] & BUTTON_STATE_FLAG)) {
 		_button_state[1] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
-	} else if (!(pin & BUTTON_1) && (_button_state[1] & BUTTON_STATE_FLAG)) {
+	} else if (!(pin & (1 << BUTTON_1)) && (_button_state[1] & BUTTON_STATE_FLAG)) {
 		_button_state[1] = BUTTON_CHANGED_FLAG;
 	}
 
-	if ((pin & BUTTON_2) && !(_button_state[2] & BUTTON_STATE_FLAG)) {
+	/* Check the button state against the saved state for button 2 */
+	if ((pin & (1 << BUTTON_2)) && !(_button_state[2] & BUTTON_STATE_FLAG)) {
 		_button_state[2] = BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG;
-	} else if (!(pin & BUTTON_2) && (_button_state[2] & BUTTON_STATE_FLAG)) {
+	} else if (!(pin & (1 << BUTTON_2)) && (_button_state[2] & BUTTON_STATE_FLAG)) {
 		_button_state[2] = BUTTON_CHANGED_FLAG;
 	}
 }
