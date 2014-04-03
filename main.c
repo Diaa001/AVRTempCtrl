@@ -202,6 +202,7 @@ int main (void) {
 				interrupts_suspend();
 				int16_t adc_val = (int16_t) temperature_ADC[0];
 				interrupts_resume();
+
 				int16_t temperature = temperature_ADS1248_to_temp(adc_val);
 
 				interrupts_suspend();
@@ -218,6 +219,7 @@ int main (void) {
 					/* Turn the alarm on and stop the PID controller */
 					alarm_state = 1;
 					PID_controller_state = PID_CTRL_OFF;
+					LED_set(LED_ACTIVE, LED_OFF);
 
 					/* Turn off the PWM signal, i.e. turn of cooling / heating power */
 					OCR1B = 0;
@@ -258,6 +260,7 @@ int main (void) {
 
 			/* Test for the increment again because it could have been reset between the if
 			   condition and the interrupt suspension. */
+
 			if (increment) {
 				/* Set the new PID controller setpoint using the increment */
 				PID_controller_setpoint_T += increment * 25;
@@ -269,9 +272,21 @@ int main (void) {
 
 			/* Toggle the PID controller state */
 			if (PID_controller_state == PID_CTRL_OFF) {
-				PID_controller_state = PID_CTRL_COOLING;
-				LED_set(LED_ACTIVE, LED_ON);
+				if (alarm_state) {
+					/* Turn off the alarm, but do not start controlling */
+					alarm_state = 0;
+					LED_set(LED_ERROR, LED_OFF);
+				} else if (check_alarm()) {
+					/* Do not allow control when the interlock is unsafe */
+					alarm_state = 1;
+					LED_set(LED_ERROR, LED_ON);
+				} else {
+					/* Start controlling */
+					PID_controller_state = PID_CTRL_COOLING;
+					LED_set(LED_ACTIVE, LED_ON);
+				}
 			} else {
+				/* Stop controlling */
 				PID_controller_state = PID_CTRL_OFF;
 				LED_set(LED_ACTIVE, LED_OFF);
 			}
@@ -321,25 +336,27 @@ int main (void) {
 						PID_controller_state = PID_CTRL_OFF;
 						LED_set(LED_ACTIVE, LED_OFF);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "COOL")) {
-						/* Do not allow cooling in alarm state */
 						if (alarm_state || check_alarm()) {
+							/* Do not allow cooling in alarm state */
 							alarm_state = 1;
 							alarm_error = 1;
+							LED_set(LED_ERROR, LED_ON);
+						} else {
+							/* Turn on cooling */
+							PID_controller_state = PID_CTRL_COOLING;
+							LED_set(LED_ACTIVE, LED_ON);
 						}
-
-						/* Turn on cooling */
-						PID_controller_state = PID_CTRL_COOLING;
-						LED_set(LED_ACTIVE, LED_ON);
 					} else if (EQ_SUBCMD(cmd, ":SET:STATE:CTRL ", "HEAT")) {
-						/* Do not allow heating in alarm state */
 						if (alarm_state || check_alarm()) {
+							/* Do not allow heating in alarm state */
 							alarm_state = 1;
 							alarm_error = 1;
+							LED_set(LED_ERROR, LED_ON);
+						} else {
+							/* Turn on heating */
+							PID_controller_state = PID_CTRL_HEATING;
+							LED_set(LED_ACTIVE, LED_ON);
 						}
-
-						/* Turn on heating */
-						PID_controller_state = PID_CTRL_HEATING;
-						LED_set(LED_ACTIVE, LED_ON);
 					} else {
 						goto CMD_ERROR;
 					}
