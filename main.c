@@ -199,20 +199,17 @@ int main (void) {
 				else
 					OCR1B = 0;
 			} else if (task == TASK_DISPLAY) {
-				interrupts_suspend();
-				int16_t adc_val = (int16_t) temperature_ADC[0];
-				interrupts_resume();
+				/* Get the state of the setpoint display button */
+				uint8_t setpoint_button_pressed = _button_state[BUTTON_SETPOINT] & BUTTON_STATE_FLAG;
 
-				int16_t temperature = temperature_ADS1248_to_temp(adc_val);
+				/* Don't display the current temperature if the setpoint should be displayed */
+				if (!setpoint_button_pressed) {
+					int16_t temperature = temperature_ADS1248_to_temp(temperature_ADC[0]);
+					uint8_t humidity = humidity_ADC_to_RH_honeywell(humidity_ADC[0] >> 6);
 
-				interrupts_suspend();
-				uint16_t adc_val2 = humidity_ADC[0];
-				interrupts_resume();
-				adc_val2 >>= 6;
-				uint8_t humidity = humidity_ADC_to_RH_honeywell(adc_val2);
-
-				display_temperature(temperature);
-				display_humidity(humidity);
+					display_temperature(temperature);
+					display_humidity(humidity);
+				}
 			} else if (task == TASK_ALARM) {
 				/* Only execute alarm checking when the controller is on */
 				if (PID_controller_state != PID_CTRL_OFF && check_alarm()) {
@@ -258,13 +255,17 @@ int main (void) {
 			_encoder_increment = 0;
 			interrupts_resume();
 
-			/* Test for the increment again because it could have been reset between the if
-			   condition and the interrupt suspension. */
+			/* Get the setpoint button state */
+			int8_t setpoint_button_pressed = _button_state[BUTTON_SETPOINT] & BUTTON_STATE_FLAG;
 
-			if (increment) {
+			/* Don't change anything unless the setpoint button is pressed. Also test
+			   for the increment again because it could have been reset between the
+			   if condition and the interrupt suspension. */
+			if (setpoint_button_pressed && increment) {
 				/* Set the new PID controller setpoint using the increment */
 				PID_controller_setpoint_T += increment * 25;
 				PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
+				display_temperature(PID_controller_setpoint_T);
 			}
 		} else if (_button_state[BUTTON_CTRL] == (BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG)) {
 			/* Turn off the changed flag of the button state */
@@ -289,6 +290,25 @@ int main (void) {
 				/* Stop controlling */
 				PID_controller_state = PID_CTRL_OFF;
 				LED_set(LED_ACTIVE, LED_OFF);
+			}
+		} else if (_button_state[BUTTON_SETPOINT] & BUTTON_CHANGED_FLAG) {
+			/* Save the button state quickly while suspending interrupts */
+			interrupts_suspend();
+			uint8_t button_state = _button_state[BUTTON_SETPOINT];
+			_button_state[BUTTON_SETPOINT] &= ~BUTTON_CHANGED_FLAG;
+			interrupts_resume();
+
+			/* Test for the changed flag again because in could have been reset after the
+			   if condition */
+			if (button_state & BUTTON_CHANGED_FLAG) {
+				if (button_state & BUTTON_STATE_FLAG) {
+					/* Button pressed */
+					display_temperature(PID_controller_setpoint_T);
+				} else {
+					/* Button released */
+					int16_t temperature = temperature_ADS1248_to_temp(temperature_ADC[0]);
+					display_temperature(temperature);
+				}
 			}
 		} else if (_rx_complete) {
 			char * cmd = (char *) _rx_buffer[_rx_buffer_sel];

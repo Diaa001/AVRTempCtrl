@@ -54,6 +54,7 @@
 #define BUTTON_CHANGED_FLAG		0x80	///< Flag used to indigate change of state of a button in \ref _button_state
 
 #define BUTTON_CTRL			0	///< Assignment for the button that controls the state of the temperature controller
+#define BUTTON_SETPOINT			1	///< Assignment for the button that controls display and setting of the set point
 
 /* *** Button variables ************************************************************************************************************************************ */
 
