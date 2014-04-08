@@ -285,6 +285,10 @@ int main (void) {
 					/* Start controlling */
 					PID_controller_state = PID_CTRL_COOLING;
 					LED_set(LED_ACTIVE, LED_ON);
+
+					/* Reset the integrals */
+					PID_controller_settings[0].sumError = 0;
+					PID_controller_settings[1].sumError = 0;
 				}
 			} else {
 				/* Stop controlling */
