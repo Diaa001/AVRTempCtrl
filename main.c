@@ -57,6 +57,9 @@
 #define EQ_CMD(A, B)		(strncmp((A), (B), strlen(B)) == 0)			///< Tests whether string A matches B for the length of string B
 #define EQ_SUBCMD(A, C, B)	(strncmp(SUBSTR((A), (C)), (B), strlen(B)) == 0)	///< Tests whether string B matches A, offset by the length of string C
 
+#define set_ctrl_heating()	{PORTD |= (1 << PD3);}					///< Sets the heating/cooling control output high to indicate heating
+#define set_ctrl_cooling()	{PORTD &= ~(1 << PD3);}					///< Sets the heating/cooling control output low to indicate cooling
+
 #define PID_CTRL_COOLING	0		///< PID controller state that represents cooling
 #define PID_CTRL_HEATING	1		///< PID controller state that represents heating
 #define PID_CTRL_OFF		2		///< PID controller state that represents control off
@@ -103,6 +106,10 @@ int main (void) {
 	PORTB &= ~(1 << PB2);
 	DDRA |= (1 << PA6);
 	PORTA |= (1 << PA6);
+
+	/* Configure the heating/cooling control output and set it low (cooling) */
+	DDRD |= (1 << PD3);
+	PORTD &= ~(1 << PD3);
 
 	USART_init();
 	timer_8bit_cnt0_init();
