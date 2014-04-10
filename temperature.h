@@ -37,6 +37,10 @@
 
 /* *** Temperature constants ******************************************************************************************************************************* */
 
+/* Minimum and maximum temperatures (times 100) */
+#define TEMPERATURE_MIN		-5000	///< Minimum allowed temperature in degrees Celsius (times 100)
+#define TEMPERATURE_MAX		+5000	///< Maximum allowed temperature in degrees Celsius (times 100)
+
 /* Start and ready ports and pins */
 #define ADS1248_START_0_PORT	PORTB	///< Port output register of the micro controller for the start signal to the first ADS1248 ADC
 #define ADS1248_START_0_DDR	DDRB	///< Data direction register of the micro controller for the start signal to the first ADS1248 ADC

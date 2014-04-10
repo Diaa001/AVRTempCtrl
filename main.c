@@ -66,6 +66,7 @@
 pidData_t PID_controller_settings[2];		///< Structures holding the PID controller parameters, the integral, and such
 uint8_t PID_controller_state = PID_CTRL_OFF;	///< Controller mode: PID_CTRL_OFF, PID_CTRL_COOLING, or PID_CTRL_HEATING
 int16_t PID_controller_setpoint_T;		///< Setpoint of the PID controller in degrees Celsius (times 100)
+int16_t PID_controller_setpoint_T_change;	///< Temporary setpoint value of the PID controller in degrees Celsius (times 100) used while changing it
 int16_t PID_controller_setpoint_ADC;		///< Setpoint of the PID controller in ADC units
 
 uint8_t alarm_state;				///< Alarm state. Zero if no alarm, non-zero when an alarm occurs. An alarm must be acknowledged by the user.
@@ -160,6 +161,9 @@ int main (void) {
 	interrupts_on();
 
 	int8_t ADS1248_channel;
+
+	/* Variable that indicates a setpoint change caused by the rotary encoder */
+	uint8_t setpoint_changed = 0;
 
 	/* Main loop */
 	while(1) {
@@ -269,10 +273,25 @@ int main (void) {
 			   for the increment again because it could have been reset between the
 			   if condition and the interrupt suspension. */
 			if (setpoint_button_pressed && increment) {
+				if (setpoint_changed == 0) {
+					/* Mark the setpoint changed */
+					setpoint_changed = 1;
+
+					/* The setpoint for changing was already rounded down to the next lower multiple of
+					   ENCODER_SETPOINT_INCREMENT. A negative increment should take this into account. */
+					if (increment < 0 && PID_controller_setpoint_T_change < PID_controller_setpoint_T)
+						increment += 1;
+				}
+
 				/* Set the new PID controller setpoint using the increment */
-				PID_controller_setpoint_T += increment * 25;
-				PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
-				display_temperature(PID_controller_setpoint_T);
+				int16_t new_setpoint = PID_controller_setpoint_T_change + increment * ENCODER_SETPOINT_INCREMENT;
+
+				/* Check for extreme values */
+				if (new_setpoint <= TEMPERATURE_MAX && new_setpoint >= TEMPERATURE_MIN)
+					PID_controller_setpoint_T_change = new_setpoint;
+
+				/* Display the setpoint */
+				display_temperature(PID_controller_setpoint_T_change);
 			}
 		} else if (_button_state[BUTTON_CTRL] == (BUTTON_STATE_FLAG | BUTTON_CHANGED_FLAG)) {
 			/* Turn off the changed flag of the button state */
@@ -315,8 +334,33 @@ int main (void) {
 				if (button_state & BUTTON_STATE_FLAG) {
 					/* Button pressed */
 					display_temperature(PID_controller_setpoint_T);
+
+					/* Set the value used for changing to a multiple of ENCODER_SETPOINT_INCREMENT by rounding down */
+					if (PID_controller_setpoint_T >= 0) {
+						PID_controller_setpoint_T_change = PID_controller_setpoint_T / ENCODER_SETPOINT_INCREMENT;
+						PID_controller_setpoint_T_change *= ENCODER_SETPOINT_INCREMENT;
+					} else {
+						PID_controller_setpoint_T_change = PID_controller_setpoint_T - (ENCODER_SETPOINT_INCREMENT - 1);
+						PID_controller_setpoint_T_change /= ENCODER_SETPOINT_INCREMENT;
+						PID_controller_setpoint_T_change *= ENCODER_SETPOINT_INCREMENT;
+					}
 				} else {
 					/* Button released */
+
+					/* Check whether the setpoint was changed */
+					if (setpoint_changed && PID_controller_setpoint_T != PID_controller_setpoint_T_change) {
+						/* Set the new setpoint */
+						PID_controller_setpoint_T = PID_controller_setpoint_T_change;
+						PID_controller_setpoint_ADC = temperature_to_ADS1248(PID_controller_setpoint_T);
+
+						/* Reset the PID controller integrals */
+						PID_controller_settings[0].sumError = 0;
+						PID_controller_settings[1].sumError = 0;
+					}
+
+					setpoint_changed = 0;
+
+					/* Display the current temperature */
 					int16_t temperature = temperature_ADS1248_to_temp(temperature_ADC[0]);
 					display_temperature(temperature);
 				}

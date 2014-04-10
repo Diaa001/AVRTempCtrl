@@ -44,6 +44,8 @@
 #define ENCODER_STATE_3		((1 << ENCODER_INPUT_A) | (1 << ENCODER_INPUT_B))	///< Constant that identifies encoder state 3
 #define ENCODER_STATE_4		((0 << ENCODER_INPUT_A) | (1 << ENCODER_INPUT_B))	///< Constant that identifies encoder state 4
 
+#define ENCODER_SETPOINT_INCREMENT	25						///< The increment in degrees celsius (times 100) caused by the encoder
+
 /* *** Encoder variables *********************************************************************************************************************************** */
 
 extern volatile uint8_t _encoder_state;							///< Last state of the encoder
